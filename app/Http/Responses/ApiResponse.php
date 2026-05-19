@@ -3,6 +3,8 @@
 namespace App\Http\Responses;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class ApiResponse
 {
@@ -83,5 +85,34 @@ class ApiResponse
             'message' => $message,
             'data' => $data
         ], 201);
+    }
+
+    /**
+     * Respuesta paginada estándar.
+     * Devuelve solo los items transformados y los metadatos de paginación.
+     *
+     * @param string $message
+     * @param LengthAwarePaginator $paginator
+     * @param class-string<JsonResource> $resourceClass
+     * @return JsonResponse
+     */
+    public static function paginated(
+        string $message,
+        LengthAwarePaginator $paginator,
+        string $resourceClass
+    ): JsonResponse {
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'data' => $resourceClass::collection($paginator->getCollection())->toArray(request()),
+            'pagination' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'from' => $paginator->firstItem(),
+                'to' => $paginator->lastItem(),
+            ],
+        ], 200);
     }
 }

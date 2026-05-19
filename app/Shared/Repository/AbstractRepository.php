@@ -2,6 +2,7 @@
 
 namespace App\Shared\Repository;
 
+use App\Shared\Exceptions\BusinessConflictException;
 use App\Shared\Exceptions\NotFoundException;
 use Illuminate\Database\Eloquent\Model;
 use \Illuminate\Pagination\LengthAwarePaginator;
@@ -67,6 +68,8 @@ abstract class AbstractRepository
             return $entity;
         } catch (NotFoundException $e) {
             throw $e;
+        } catch (QueryException $e) {
+            throw $e;
         } catch (\Exception $e) {
             throw new RuntimeException("Unexpected error while finding entity.");
         }
@@ -102,6 +105,8 @@ abstract class AbstractRepository
             return $entity;
         } catch (NotFoundException $e) {
             throw $e;
+        } catch (QueryException $e) {
+            throw $e;
         } catch (\Exception $e) {
             throw new RuntimeException("Unexpected error while finding entity.");
         }
@@ -114,6 +119,8 @@ abstract class AbstractRepository
     {
         try {
             return $this->model->all(); // Collection de objetos Eloquent
+        } catch (QueryException $e) {
+            throw $e;
         } catch (\Exception $e) {
             throw new RuntimeException("Unexpected error while retrieving entities.");
         }
@@ -126,6 +133,8 @@ abstract class AbstractRepository
     {
         try {
             return $this->model->paginate($perPage);
+        } catch (QueryException $e) {
+            throw $e;
         } catch (\Exception $e) {
             throw new RuntimeException("Unexpected error while paginating.");
         }
@@ -138,6 +147,8 @@ abstract class AbstractRepository
             if($search){ $search = mb_strtolower(trim($search));
             $query->whereRaw("LOWER(name) LIKE ?", ["%{$search}%"]); }
             return $query->paginate($perPage);
+        } catch (QueryException $e) {
+            throw $e;
         } catch (\Exception $e) {
             throw new RuntimeException("Unexpected error while paginating.");
         }
@@ -153,6 +164,8 @@ abstract class AbstractRepository
     {
         try {
             return $this->model->count();
+        } catch (QueryException $e) {
+            throw $e;
         } catch (\Exception $e) {
             throw new RuntimeException("Unexpected error while counting entities.");
         }
@@ -169,6 +182,8 @@ abstract class AbstractRepository
             return $this->model
                 ->whereBetween('created_at', [$startDate, $endDate])
                 ->count();
+        } catch (QueryException $e) {
+            throw $e;
         } catch (\Exception $e) {
             throw new RuntimeException("Unexpected error while counting entities by date range.");
         }
@@ -186,6 +201,8 @@ abstract class AbstractRepository
                 "LOWER(state) = LOWER(?)",
                 [trim($state)]
             )->first();
+        } catch (QueryException $e) {
+            throw $e;
         } catch (\Exception $e) {
             throw new RuntimeException("Unexpected error while finding entity by state.");
         }
@@ -209,8 +226,44 @@ abstract class AbstractRepository
             
             // Búsqueda exacta para otros tipos (int, bool, etc.)
             return $this->model->where($field, $value)->exists();
+        } catch (QueryException $e) {
+            throw $e;
         } catch (\Exception $e) {
             throw new RuntimeException("Unexpected error while checking entity existence.");
         }
     }
+
+    /**
+     *
+     * @param int $id
+     * @param string[] $guardedRelations 
+     * @throws NotFoundException
+     * @throws BusinessConflictException
+     * 
+     */
+    public function delete(int $id, array $guardedRelations = []): void
+    {
+        try {
+            $entity = $this->findById($id);
+
+            foreach ($guardedRelations as $relation) {
+                if ($entity->{$relation}()->exists()) {
+                    $entityName = class_basename($entity);
+                    throw new BusinessConflictException("Cannot delete {$entityName}: it has associated records.");
+                }
+            }
+
+            $entity->delete();
+        } catch (BusinessConflictException $e) {
+            throw $e;
+        } catch (NotFoundException $e) {
+            throw $e;
+        } catch (QueryException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            throw new RuntimeException("Unexpected error while deleting entity.");
+        }
+    }
+
+    
 }

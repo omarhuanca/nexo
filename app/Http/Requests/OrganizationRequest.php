@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class CreateOrganizationRequest extends FormRequest
+class OrganizationRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -24,7 +24,7 @@ class CreateOrganizationRequest extends FormRequest
     {
         return [
             'name' => 'required|string|min:3|max:255',
-            'tax_id' => 'required|string|min:11|max:20',
+            'tax_id' => 'required|string|min:3|max:20',
             'active' => 'required|boolean',
         ];
     }

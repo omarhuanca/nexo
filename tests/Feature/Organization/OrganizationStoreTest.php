@@ -122,7 +122,7 @@ class OrganizationStoreTest extends TestCase
 
     public function test_fails_when_tax_id_is_too_short(): void
     {
-        $response = $this->postJson($this->endpoint, $this->validPayload(['tax_id' => '1234567890']));
+        $response = $this->postJson($this->endpoint, $this->validPayload(['tax_id' => '12']));
 
         $response->assertStatus(422)
             ->assertJsonPath('success', false)

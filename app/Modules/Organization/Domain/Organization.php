@@ -2,19 +2,25 @@
 
 namespace App\Modules\Organization\Domain;
 
+use App\Shared\Domain\BaseEntity;
 use App\Shared\Exceptions\DomainValidationException;
 use App\Shared\Helpers\Cleaner;
+use App\Shared\Traits\GettersAndSetters;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Organization extends Model
+class Organization extends BaseEntity
 {
-    use HasFactory;
+    use HasFactory, GettersAndSetters;
     protected $table = 'organizations';
     protected $fillable = [
         'name',
         'tax_id',
         'active',
+    ];
+
+    protected $casts = [
+        'active' => 'boolean',
     ];
 
     public static $ERROR_NAME_EMPTY = "The organization name cannot be empty.";
@@ -33,11 +39,6 @@ class Organization extends Model
         return \Database\Factories\OrganizationFactory::new();
     }
 
-    public function __construct(array $attributes = [])
-    {
-        parent::__construct($attributes);
-    }
-
     public static function at(string $name, string $taxId, bool $active): self
     {
         $name = Cleaner::cleanString($name);
@@ -52,7 +53,7 @@ class Organization extends Model
         if (!is_bool($active)) $errors['active'][] = self::$ERROR_ACTIVE_INVALID;
         
         if (empty($taxId)) $errors['tax_id'][] = self::$ERROR_TAX_ID_EMPTY;
-        elseif (strlen($taxId) < 11) $errors['tax_id'][] = self::$ERROR_MIN_TAX_ID_LENGTH;
+        elseif (strlen($taxId) < 3) $errors['tax_id'][] = self::$ERROR_MIN_TAX_ID_LENGTH;
         elseif (strlen($taxId) > 20) $errors['tax_id'][] = self::$ERROR_MAX_TAX_ID_LENGTH;
         elseif (!preg_match('/^[\d-]+$/', $taxId)) $errors['tax_id'][] = self::$ERROR_INVALID_TAX_ID_FORMAT;
         

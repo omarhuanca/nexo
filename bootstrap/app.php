@@ -46,10 +46,12 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         $exceptions->render(function (\RuntimeException $e) {
+            report($e);
             return ApiResponse::error('An internal error occurred.', 500);
         });
 
         $exceptions->render(function (\Throwable $e) {
-            return ApiResponse::error('An unexpected error occurred.', 500);
+            report($e);
+            return ApiResponse::error('An unexpected error occurred.' . $e->getMessage(), 500);
         });
     })->create();
