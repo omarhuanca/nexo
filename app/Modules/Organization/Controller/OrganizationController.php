@@ -101,6 +101,10 @@ class OrganizationController extends Controller
      */
     public function index(\Illuminate\Http\Request $request): JsonResponse
     {
+        $request->validate([
+            'perPage' => 'sometimes|integer|min:1|max:100',
+        ]);
+        
         $search  = $request->query('search');
         $perPage = (int) $request->query('perPage', 10);
         $organizations = $this->organizationService->listOrganizations($search, $perPage);

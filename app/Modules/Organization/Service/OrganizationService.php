@@ -54,6 +54,6 @@ class OrganizationService
 
     public function deleteOrganization(int $id): void
     {
-        $this->organizationRepository->delete($id /*['connectors', 'users']*/);
+        $this->organizationRepository->delete($id, ['connectors', 'integrationEvents']);
     }
 }

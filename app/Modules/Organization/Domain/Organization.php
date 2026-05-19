@@ -2,12 +2,14 @@
 
 namespace App\Modules\Organization\Domain;
 
+use App\Modules\Connector\Domain\Connector;
+use App\Modules\IntegrationEvent\Domain\IntegrationEvent;
 use App\Shared\Domain\BaseEntity;
 use App\Shared\Exceptions\DomainValidationException;
 use App\Shared\Helpers\Cleaner;
 use App\Shared\Traits\GettersAndSetters;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Organization extends BaseEntity
 {
@@ -65,5 +67,15 @@ class Organization extends BaseEntity
             'tax_id' => trim($taxId),
             'active' => $active,
         ]);
+    }
+
+    public function connectors(): HasMany
+    {
+        return $this->hasMany(Connector::class, 'organization_id');
+    }
+
+    public function integrationEvents(): HasMany
+    {
+        return $this->hasMany(IntegrationEvent::class, 'organization_id');
     }
 }
