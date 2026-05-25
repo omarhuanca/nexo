@@ -35,7 +35,8 @@ class XeroOauthService
         return $this->provider->getAuthorizationUrl(['scope' => config('xero.scopes')]);
     }
 
-    public function xeroCallback(Request $request){
+    public function xeroCallback(Request $request): array
+    {
         $response = Http::withoutVerifying()->asForm()->post(
             'https://identity.xero.com/connect/token',
             [
@@ -48,9 +49,29 @@ class XeroOauthService
 
         );
 
-         if (!$response->successful()) {
+        if (!$response->successful())
             throw new BusinessConflictException('Failed to retrieve access token from Xero: ' . $response->body());
-        }
+
+        $tokens = $response->json();
+
+        $connections = $this->getConnections($tokens['access_token']);
+
+        if (empty($connections)) throw new BusinessConflictException('No Xero connections found for this account.');
+        if(count($connections) > 1) throw new BusinessConflictException('Multiple Xero connections found for this account. Please disconnect other connections and try again.');
+
+        return [
+            'tokens' => $tokens,
+            'connection' => $connections[0],
+        ];
+    }
+
+    public function getConnections(string $accessToken)
+    {
+        $response = Http::withoutVerifying()
+        ->withToken($accessToken)
+        ->get('https://api.xero.com/connections');
+
+        if (!$response->successful()) throw new BusinessConflictException('Failed to retrieve connections from Xero: ' . $response->body());
 
         return $response->json();
     }

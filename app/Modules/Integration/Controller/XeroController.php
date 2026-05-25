@@ -1,12 +1,14 @@
 <?php
 namespace App\Modules\Integration\Controller;
 
+use App\Http\Responses\ApiResponse;
 use App\Modules\Integration\Service\Xero\XeroOauthService;
+use App\Modules\Integration\Service\Xero\XeroConnectionService;
 use Illuminate\Http\Request;
 
 class XeroController extends IntegrationController
 {
-    public function __construct(private readonly XeroOauthService $xeroOauthService) {}
+    public function __construct(private readonly XeroOauthService $xeroOauthService, private readonly XeroConnectionService $xeroConnectionService) {}
 
     public function connect()
     {
@@ -17,11 +19,9 @@ class XeroController extends IntegrationController
 
     public function callback(Request $request)
     {
-        $tokens = $this->xeroOauthService->xeroCallback($request);
+        $data = $this->xeroOauthService->xeroCallback($request);
+        $connection = $this->xeroConnectionService->saveOrUpdate($data['tokens'], $data['connection']);
 
-        return response()->json([
-            'success' => true,
-            'tokens' => $tokens,
-        ]);
+        return ApiResponse::success("Connected to Xero successfully", 200, $connection);
     }
 }
