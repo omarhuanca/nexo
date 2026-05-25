@@ -20,9 +20,7 @@ use OpenApi\Annotations as OA;
  */
 class ConnectorController extends Controller
 {
-    public function __construct(
-        private readonly ConnectorService $connectorService
-    ) {}
+    public function __construct(private readonly ConnectorService $connectorService) {}
 
     /**
      * @OA\Get(

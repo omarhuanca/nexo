@@ -49,7 +49,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(function (\RuntimeException $e) {
             report($e);
-            return ApiResponse::error('An internal error occurred.', 500);
+            return ApiResponse::error('An internal error occurred.'. $e->getMessage(), 500);
         });
 
         $exceptions->render(function (\Throwable $e) {

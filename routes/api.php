@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use App\Modules\Organization\Controller\OrganizationController;
 use App\Modules\Connector\Controller\ConnectorController;
+use App\Modules\Integration\Controller\XeroController;
+use App\Modules\IntegrationEvent\Controller\IntegrationEventController;
 
 // ORGANIZATIONS ROUTES
 
@@ -22,8 +24,9 @@ Route::delete('/connectors/{id}', [ConnectorController::class, 'destroy']);
 
 // INTEGRATION EVENTS ROUTES
 
-use App\Modules\IntegrationEvent\Controller\IntegrationEventController;
-
 Route::middleware('connector.auth')->group(function () {
     Route::post('/integration-events', [IntegrationEventController::class, 'store']);
 });
+
+Route::get('/integrations/xero/connect', [XeroController::class, 'connect']);
+Route::get('/integrations/xero/callback', [XeroController::class, 'callback']);
