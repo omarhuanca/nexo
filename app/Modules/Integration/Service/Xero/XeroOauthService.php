@@ -1,18 +1,22 @@
 <?php
 namespace App\Modules\Integration\Service\Xero;
 
+use App\Modules\Integration\Domain\Xero\XeroConnection;
+use App\Modules\Integration\Repository\XeroConnectionRepository;
 use App\Shared\Exceptions\BusinessConflictException;
-use GuzzleHttp\Client;
+use App\Shared\Helpers\HttpClientHelper;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
 use League\OAuth2\Client\Provider\GenericProvider;
 
 class XeroOauthService
 {
     private GenericProvider $provider;
+    private XeroConnectionRepository $repository;
 
-    public function __construct()
+    public function __construct(XeroConnectionRepository $xeroConnectionRepository)
     {
+        $this->repository = $xeroConnectionRepository;
+
         $this->provider = new GenericProvider([
             'clientId' => config('xero.client_id'),
             'clientSecret' => config('xero.client_secret'),
@@ -21,14 +25,10 @@ class XeroOauthService
             'urlAccessToken' => config('xero.url_access_token'),
             'urlResourceOwnerDetails' => config('xero.url_resource_owner'),
         ], [
-            'httpClient' => $this->httpClient(),
+            'httpClient' => HttpClientHelper::guzzle(),
         ]);
     }
-
-    private function httpClient(): Client
-    {
-        return new Client(['verify' => false]);
-    }
+    
 
     public function getAuthorizationUrl(): string
     {
@@ -37,7 +37,7 @@ class XeroOauthService
 
     public function xeroCallback(Request $request): array
     {
-        $response = Http::withoutVerifying()->asForm()->post(
+        $response = HttpClientHelper::http()->asForm()->post(
             'https://identity.xero.com/connect/token',
             [
                 'grant_type' => 'authorization_code',
@@ -67,7 +67,7 @@ class XeroOauthService
 
     public function getConnections(string $accessToken)
     {
-        $response = Http::withoutVerifying()
+        $response = HttpClientHelper::http()
         ->withToken($accessToken)
         ->get('https://api.xero.com/connections');
 
@@ -75,4 +75,28 @@ class XeroOauthService
 
         return $response->json();
     }
-}   
+
+    public function refreshAccessToken(XeroConnection $connection): XeroConnection
+    {
+        $response = HttpClientHelper::http()->asForm()->post(
+            'https://identity.xero.com/connect/token',
+            [
+                'grant_type' => 'refresh_token',
+                'client_id' => config('xero.client_id'),
+                'client_secret' => config('xero.client_secret'),
+                'refresh_token' => $connection->getRefreshToken(),
+            ]
+        );
+
+        if (!$response->successful()) throw new BusinessConflictException('Failed to refresh access token from Xero: ' . $response->body());
+        
+        $tokens = $response->json();
+
+        $connection->setAccessToken($tokens['access_token']);
+        $connection->setRefreshToken($tokens['refresh_token']);
+        $connection->setExpiresAt(now()->addSeconds($tokens['expires_in']));
+        
+        $this->repository->save($connection);
+        return $connection;
+    }
+}

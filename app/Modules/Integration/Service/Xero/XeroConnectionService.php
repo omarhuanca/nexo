@@ -40,4 +40,9 @@ class XeroConnectionService
         
         return $this->repository->saveReturn($newConnection);
     }
+
+    public function findById(int $id): XeroConnection
+    {
+        return $this->repository->findById($id);
+    }
 }

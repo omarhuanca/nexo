@@ -2,10 +2,10 @@
 
 namespace App\Modules\Integration\Domain\Xero;
 
+use App\Shared\Domain\BaseEntity;
 use App\Shared\Traits\GettersAndSetters;
-use Illuminate\Database\Eloquent\Model;
 
-class XeroConnection extends Model
+class XeroConnection extends BaseEntity
 {
     use GettersAndSetters;
     protected $fillable = [
