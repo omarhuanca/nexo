@@ -1683,11 +1683,26 @@
                     "Xero Integration"
                 ],
                 "summary": "Initiate Xero OAuth2 authorization",
-                "description": "Redirects the user to the Xero authorization page to begin the OAuth2 flow. After the user grants access, Xero will redirect to the callback URL.",
+                "description": "Stores the organization_id in the server session and redirects to the Xero authorization page to begin the OAuth2 flow. After the user grants access, Xero redirects to the callback URL where the connection is saved and linked to this organization.",
                 "operationId": "xeroConnect",
+                "parameters": [
+                    {
+                        "name": "organization_id",
+                        "in": "query",
+                        "description": "ID of the organization to link the Xero connection to.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
                 "responses": {
                     "302": {
-                        "description": "Redirect to Xero authorization page"
+                        "description": "Redirect to Xero authorization page."
+                    },
+                    "422": {
+                        "description": "Validation error — organization_id missing or not found."
                     }
                 }
             }
@@ -1698,7 +1713,7 @@
                     "Xero Integration"
                 ],
                 "summary": "Xero OAuth2 callback",
-                "description": "Handles the callback from Xero after the user authorizes the app. Exchanges the authorization code for tokens and persists the connection. This endpoint is called automatically by Xero — do not call it directly.",
+                "description": "Handles the redirect from Xero after the user authorizes the app. Exchanges the authorization code for tokens, links the connection to the organization stored in session (set during /connect), and persists the XeroConnection record. This endpoint is called automatically by Xero — do not call it directly.",
                 "operationId": "xeroCallback",
                 "parameters": [
                     {
@@ -1724,7 +1739,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Xero connection established successfully",
+                        "description": "Xero connection established and linked to organization successfully.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1743,6 +1758,11 @@
                                                     "type": "integer",
                                                     "example": 1
                                                 },
+                                                "organization_id": {
+                                                    "description": "Organization this connection belongs to.",
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
                                                 "tenant_id": {
                                                     "type": "string",
                                                     "format": "uuid",
@@ -1755,14 +1775,6 @@
                                                 "tenant_type": {
                                                     "type": "string",
                                                     "example": "ORGANISATION"
-                                                },
-                                                "access_token": {
-                                                    "type": "string",
-                                                    "example": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
-                                                },
-                                                "refresh_token": {
-                                                    "type": "string",
-                                                    "example": "r3fr3shT0k3n..."
                                                 },
                                                 "expires_at": {
                                                     "type": "string",
@@ -1787,7 +1799,7 @@
                         }
                     },
                     "422": {
-                        "description": "Invalid or expired authorization code",
+                        "description": "Invalid OAuth callback — missing or malformed state parameter, or invalid authorization code.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1798,11 +1810,7 @@
                                         },
                                         "message": {
                                             "type": "string",
-                                            "example": "Invalid authorization code."
-                                        },
-                                        "data": {
-                                            "type": "array",
-                                            "items": {}
+                                            "example": "Invalid OAuth callback: missing state parameter."
                                         }
                                     },
                                     "type": "object"
@@ -1818,14 +1826,14 @@
                 "tags": [
                     "Xero Integration"
                 ],
-                "summary": "List Xero contacts",
-                "description": "Fetches the list of contacts from Xero for the given connection.",
+                "summary": "List Xero contacts for a connection",
+                "description": "Fetches the list of contacts from Xero using the given connection. The connection must belong to an organization. Tokens are refreshed automatically if expired.",
                 "operationId": "xeroGetContacts",
                 "parameters": [
                     {
                         "name": "connectionId",
                         "in": "path",
-                        "description": "ID of the Xero connection.",
+                        "description": "ID of the Xero connection (returned by the callback endpoint).",
                         "required": true,
                         "schema": {
                             "type": "integer",
@@ -1835,7 +1843,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Xero contacts fetched successfully",
+                        "description": "Xero contacts fetched successfully.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1890,7 +1898,7 @@
                         }
                     },
                     "404": {
-                        "description": "Xero connection not found",
+                        "description": "Xero connection not found.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1901,11 +1909,7 @@
                                         },
                                         "message": {
                                             "type": "string",
-                                            "example": "Xero connection not found with ID: 99"
-                                        },
-                                        "data": {
-                                            "type": "array",
-                                            "items": {}
+                                            "example": "Resource not found."
                                         }
                                     },
                                     "type": "object"
@@ -1914,6 +1918,130 @@
                         }
                     }
                 }
+            }
+        },
+        "/api/integrations/products": {
+            "post": {
+                "tags": [
+                    "Xero Products"
+                ],
+                "summary": "Sync products to Xero",
+                "description": "Creates or updates one or more Items (Products & Services) in the Xero account linked to the connector's organization. Xero performs an upsert by `code` — if the item already exists it is updated, otherwise it is created. The calling system has full control over pricing and account codes. Requires the connector's Bearer token.",
+                "operationId": "syncXeroItems",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "items"
+                                ],
+                                "properties": {
+                                    "items": {
+                                        "type": "array",
+                                        "items": {
+                                            "required": [
+                                                "code",
+                                                "name",
+                                                "salePrice",
+                                                "costPrice",
+                                                "salesAccountCode",
+                                                "purchaseAccountCode"
+                                            ],
+                                            "properties": {
+                                                "code": {
+                                                    "description": "Unique item code used as the upsert key in Xero.",
+                                                    "type": "string",
+                                                    "example": "PROD-001",
+                                                    "maxLength": 30
+                                                },
+                                                "name": {
+                                                    "description": "Display name of the item.",
+                                                    "type": "string",
+                                                    "example": "Producto A",
+                                                    "maxLength": 50
+                                                },
+                                                "description": {
+                                                    "type": "string",
+                                                    "example": "Descripción del producto.",
+                                                    "nullable": true,
+                                                    "maxLength": 4000
+                                                },
+                                                "salePrice": {
+                                                    "description": "Unit sale price (SalesDetails.UnitPrice in Xero).",
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 50
+                                                },
+                                                "costPrice": {
+                                                    "description": "Unit cost price (PurchaseDetails.UnitPrice in Xero).",
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 35
+                                                },
+                                                "salesAccountCode": {
+                                                    "description": "Xero account code for sales (e.g. Revenue account).",
+                                                    "type": "string",
+                                                    "example": "200",
+                                                    "maxLength": 10
+                                                },
+                                                "purchaseAccountCode": {
+                                                    "description": "Xero account code for purchases (e.g. COGS account).",
+                                                    "type": "string",
+                                                    "example": "310",
+                                                    "maxLength": 10
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "minItems": 1
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Items synced successfully. Returns the raw Xero API response.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Items synced to Xero successfully."
+                                        },
+                                        "data": {
+                                            "description": "Raw Xero Items API response.",
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized — missing or invalid connector token."
+                    },
+                    "404": {
+                        "description": "No active Xero connection found for this organization."
+                    },
+                    "422": {
+                        "description": "Validation error — missing or invalid fields."
+                    }
+                },
+                "security": [
+                    {
+                        "connectorToken": []
+                    }
+                ]
             }
         },
         "/api/organizations": {
@@ -2690,16 +2818,20 @@
             "description": "Endpoints for receiving integration events from external connectors."
         },
         {
-            "name": "TaxCore",
-            "description": "Endpoints for managing TaxCore fiscal integration. Requires an active TaxCore connection for the organization (registered via /connect)."
-        },
-        {
             "name": "Xero Integration",
             "description": "Endpoints for connecting and interacting with the Xero accounting platform via OAuth2."
         },
         {
+            "name": "Xero Products",
+            "description": "Endpoints for syncing products (Items) to the Xero accounting platform. Requires an active Xero connection for the organization and a valid connector Bearer token."
+        },
+        {
             "name": "Organizations",
             "description": "Endpoints for managing organizations"
+        },
+        {
+            "name": "TaxCore",
+            "description": "TaxCore"
         }
     ]
 }

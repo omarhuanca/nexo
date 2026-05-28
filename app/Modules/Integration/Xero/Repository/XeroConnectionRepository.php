@@ -16,4 +16,12 @@ class XeroConnectionRepository extends AbstractRepository
     {
         return $this->model->where('tenant_id', $tenantId)->first();
     }
+
+    public function findActiveByOrganizationId(int $organizationId): ?XeroConnection
+    {
+        return $this->model
+            ->where('organization_id', $organizationId)
+            ->where('active', true)
+            ->first();
+    }
 }

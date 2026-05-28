@@ -6,6 +6,7 @@ use App\Modules\Integration\Xero\Repository\XeroConnectionRepository;
 use App\Shared\Exceptions\BusinessConflictException;
 use App\Shared\Helpers\HttpClientHelper;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use League\OAuth2\Client\Provider\GenericProvider;
 
 class XeroOauthService
@@ -30,9 +31,48 @@ class XeroOauthService
     }
     
 
-    public function getAuthorizationUrl(): string
+    public function getAuthorizationUrl(int $nexoOrganizationId): string
     {
-        return $this->provider->getAuthorizationUrl(['scope' => config('xero.scopes')]);
+        $state = $this->buildState($nexoOrganizationId);
+
+        return $this->provider->getAuthorizationUrl([
+            'scope' => config('xero.scopes'),
+            'state' => $state,
+        ]);
+    }
+
+    public function extractNexoOrganizationIdFromState(string $state): int
+    {
+        if (!str_contains($state, '.')) {
+            throw new BusinessConflictException('Invalid OAuth state format.');
+        }
+
+        [$payload, $signature] = explode('.', $state, 2);
+
+        $expected = hash_hmac('sha256', $payload, config('app.key'));
+
+        if (!hash_equals($expected, $signature)) {
+            throw new BusinessConflictException('Invalid OAuth state: signature verification failed.');
+        }
+
+        $data = json_decode(base64_decode($payload), true);
+
+        if (empty($data['nexo_organization_id'])) {
+            throw new BusinessConflictException('Invalid OAuth state: missing organization context.');
+        }
+
+        return (int) $data['nexo_organization_id'];
+    }
+
+    private function buildState(int $nexoOrganizationId): string
+    {
+        $payload   = base64_encode(json_encode([
+            'nexo_organization_id' => $nexoOrganizationId,
+            'nonce' => Str::random(16),
+        ]));
+        $signature = hash_hmac('sha256', $payload, config('app.key'));
+
+        return $payload . '.' . $signature;
     }
 
     public function xeroCallback(Request $request): array

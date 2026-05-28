@@ -4,15 +4,17 @@ namespace App\Modules\Integration\Xero\Service;
 
 use App\Modules\Integration\Xero\Domain\XeroConnection;
 use App\Modules\Integration\Xero\Repository\XeroConnectionRepository;
+use App\Shared\Exceptions\NotFoundException;
 
 class XeroConnectionService
 {
     public function __construct(private readonly XeroConnectionRepository $repository) {}
-    public function saveOrUpdate(array $tokens, array $connection) : XeroConnection
+    public function saveOrUpdate(array $tokens, array $connection, int $organizationId) : XeroConnection
     {
         $existing = $this->repository->findByTenantId($connection['tenantId']);
 
         if($existing){
+            $existing->setOrganizationId($organizationId);
             $existing->setTenantName($connection['tenantName']);
             $existing->setTenantType($connection['tenantType']);
 
@@ -29,6 +31,7 @@ class XeroConnectionService
 
         $newConnection = new XeroConnection();
 
+        $newConnection->setOrganizationId($organizationId);
         $newConnection->setTenantId($connection['tenantId']);
         $newConnection->setTenantName($connection['tenantName']);
         $newConnection->setTenantType($connection['tenantType']);
@@ -44,5 +47,14 @@ class XeroConnectionService
     public function findById(int $id): XeroConnection
     {
         return $this->repository->findById($id);
+    }
+
+    public function findActiveByOrganization(int $organizationId): XeroConnection
+    {
+        $connection = $this->repository->findActiveByOrganizationId($organizationId);
+
+        if (!$connection) throw new NotFoundException("No active Xero connection found for this organization.");
+        
+        return $connection;
     }
 }

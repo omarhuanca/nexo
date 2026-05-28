@@ -13,7 +13,7 @@ use OpenApi\Annotations as OA;
 
 /**
  * @OA\Tag(
- *     name="TaxCore",
+ *     name="TaxCore Integration",
  *     description="Endpoints for managing TaxCore fiscal integration. Requires an active TaxCore connection for the organization (registered via /connect)."
  * )
  */

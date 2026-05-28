@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Modules\Organization\Controller\OrganizationController;
 use App\Modules\Connector\Controller\ConnectorController;
 use App\Modules\Integration\Xero\Controller\XeroController;
+use App\Modules\Integration\Xero\Controller\XeroItemController;
 use App\Modules\IntegrationEvent\Controller\IntegrationEventController;
 use App\Modules\Integration\TaxCore\Controller\TaxCoreController;
 
@@ -27,6 +28,7 @@ Route::delete('/connectors/{id}', [ConnectorController::class, 'destroy']);
 
 Route::middleware('connector.auth')->group(function () {
     Route::post('/integration-events', [IntegrationEventController::class, 'store']);
+    Route::post('/integrations/products', [XeroItemController::class, 'sync']);
 });
 
 Route::get('/integrations/xero/connect', [XeroController::class, 'connect']);
