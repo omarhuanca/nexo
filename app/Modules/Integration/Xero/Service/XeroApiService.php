@@ -1,8 +1,7 @@
 <?php
 
-namespace App\Modules\Integration\Service\Xero;
-use App\Modules\Integration\Domain\Xero\XeroConnection;
-use App\Shared\Exceptions\BusinessConflictException;
+namespace App\Modules\Integration\Xero\Service;
+use App\Modules\Integration\Xero\Domain\XeroConnection;
 use App\Shared\Helpers\ErrorResponseHelper;
 use App\Shared\Helpers\HttpClientHelper;
 use Illuminate\Http\Client\Response;

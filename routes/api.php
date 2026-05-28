@@ -3,8 +3,9 @@
 use Illuminate\Support\Facades\Route;
 use App\Modules\Organization\Controller\OrganizationController;
 use App\Modules\Connector\Controller\ConnectorController;
-use App\Modules\Integration\Controller\XeroController;
+use App\Modules\Integration\Xero\Controller\XeroController;
 use App\Modules\IntegrationEvent\Controller\IntegrationEventController;
+use App\Modules\Integration\TaxCore\Controller\TaxCoreController;
 
 // ORGANIZATIONS ROUTES
 
@@ -32,3 +33,10 @@ Route::get('/integrations/xero/connect', [XeroController::class, 'connect']);
 Route::get('/integrations/xero/callback', [XeroController::class, 'callback']);
 
 Route::get('/integrations/xero/{connectionId}/contacts', [XeroController::class, 'getContacts']);
+
+// TAXCORE ROUTES
+
+Route::post('/integrations/taxcore/connect', [TaxCoreController::class, 'connect']);
+Route::get('/integrations/taxcore/status', [TaxCoreController::class, 'status']);
+Route::get('/integrations/taxcore/environment-parameters',  [TaxCoreController::class, 'environmentParameters']);
+Route::post('/integrations/taxcore/invoices', [TaxCoreController::class, 'signInvoice']);

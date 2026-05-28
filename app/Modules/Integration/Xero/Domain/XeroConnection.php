@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Modules\Integration\Domain\Xero;
+namespace App\Modules\Integration\Xero\Domain;
 
 use App\Shared\Domain\BaseEntity;
 use App\Shared\Traits\GettersAndSetters;

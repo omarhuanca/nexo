@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Modules\Integration\Service\Xero;
+namespace App\Modules\Integration\Xero\Service;
 
-use App\Modules\Integration\Domain\Xero\XeroConnection;
-use App\Modules\Integration\Service\Xero\XeroApiService;
+use App\Modules\Integration\Xero\Domain\XeroConnection;
+use App\Modules\Integration\Xero\Service\XeroApiService;
 
 class XeroContactService
 {

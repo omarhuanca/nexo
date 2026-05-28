@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Modules\Integration\Repository;
+namespace App\Modules\Integration\Xero\Repository;
 
 use App\Shared\Repository\AbstractRepository;
-use App\Modules\Integration\Domain\Xero\XeroConnection;
+use App\Modules\Integration\Xero\Domain\XeroConnection;
 
 class XeroConnectionRepository extends AbstractRepository
 {

@@ -1,12 +1,13 @@
 <?php
-namespace App\Modules\Integration\Controller;
+namespace App\Modules\Integration\Xero\Controller;
 
+use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
-use App\Modules\Integration\Service\Xero\XeroOauthService;
-use App\Modules\Integration\Service\Xero\XeroConnectionService;
+use App\Modules\Integration\Xero\Service\XeroApiService;
+use App\Modules\Integration\Xero\Service\XeroConnectionService;
+use App\Modules\Integration\Xero\Service\XeroOauthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use \App\Modules\Integration\Service\Xero\XeroApiService;
 use OpenApi\Annotations as OA;
 
 /**
@@ -15,7 +16,7 @@ use OpenApi\Annotations as OA;
  *     description="Endpoints for connecting and interacting with the Xero accounting platform via OAuth2."
  * )
  */
-class XeroController extends IntegrationController
+class XeroController extends Controller
 {
     public function __construct(
         private readonly XeroOauthService $xeroOauthService,
