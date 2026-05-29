@@ -27,7 +27,7 @@ class TaxCoreController extends Controller
     /**
      * @OA\Post(
      *     path="/api/integrations/taxcore/connect",
-     *     tags={"TaxCore"},
+     *     tags={"TaxCore Integration"},
      *     summary="Register a TaxCore connection for an organization",
      *     description="Uploads a PFX/P12 certificate and registers the TaxCore V-SDC connection for an organization. The certificate must contain OID 1.3.6.1.4.1.58220.2.7 (V-SDC URL). Only one active connection per organization is allowed.",
      *     operationId="taxcoreConnect",
@@ -91,7 +91,7 @@ class TaxCoreController extends Controller
     /**
      * @OA\Get(
      *     path="/api/integrations/taxcore/status",
-     *     tags={"TaxCore"},
+     *     tags={"TaxCore Integration"},
      *     summary="Check V-SDC status for an organization",
      *     description="Queries the V-SDC status endpoint using the active TaxCore connection for the given organization. Returns SDC date/time, UID, supported languages and tax rates.",
      *     operationId="taxcoreStatus",
@@ -150,7 +150,7 @@ class TaxCoreController extends Controller
     /**
      * @OA\Get(
      *     path="/api/integrations/taxcore/environment-parameters",
-     *     tags={"TaxCore"},
+     *     tags={"TaxCore Integration"},
      *     summary="Get V-SDC environment parameters for an organization",
      *     description="Returns fiscal environment parameters from the V-SDC: organization name, TIN, timezone, city, and relevant API endpoints.",
      *     operationId="taxcoreEnvironmentParameters",
@@ -196,7 +196,7 @@ class TaxCoreController extends Controller
     /**
      * @OA\Post(
      *     path="/api/integrations/taxcore/invoices",
-     *     tags={"TaxCore"},
+     *     tags={"TaxCore Integration"},
      *     summary="Sign and fiscalize an invoice",
      *     description="Sends an invoice to the V-SDC for fiscal signing. The active TaxCore connection for the given organization is used automatically. Supports all invoice types (Normal, ProForma, Copy, Training, Advance) and transaction types (Sale, Refund). To cancel/reverse a previously signed invoice, send invoiceType=0 + transactionType=1 + referentDocumentNumber pointing to the original invoiceNumber.",
      *     operationId="taxcoreSignInvoice",

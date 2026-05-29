@@ -6,6 +6,7 @@ use App\Modules\Connector\Controller\ConnectorController;
 use App\Modules\Integration\Xero\Controller\XeroController;
 use App\Modules\Integration\Xero\Controller\XeroItemController;
 use App\Modules\IntegrationEvent\Controller\IntegrationEventController;
+use App\Modules\Sale\Controller\SaleController;
 use App\Modules\Integration\TaxCore\Controller\TaxCoreController;
 
 // ORGANIZATIONS ROUTES
@@ -29,6 +30,10 @@ Route::delete('/connectors/{id}', [ConnectorController::class, 'destroy']);
 Route::middleware('connector.auth')->group(function () {
     Route::post('/integration-events', [IntegrationEventController::class, 'store']);
     Route::post('/integrations/products', [XeroItemController::class, 'sync']);
+
+    // Sales: async Xero Invoice + TaxCore fiscal signing
+    Route::post('/sales', [SaleController::class, 'store']);
+    Route::get('/sales/{id}', [SaleController::class, 'show']);
 });
 
 Route::get('/integrations/xero/connect', [XeroController::class, 'connect']);
