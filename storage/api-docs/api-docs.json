@@ -1,0 +1,3183 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Nexo API",
+        "description": "Fiscal centralizing API for integration between sales systems, government and accounting platforms.",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://127.0.0.1:8000",
+            "description": "Local Server"
+        }
+    ],
+    "paths": {
+        "/api/connectors": {
+            "get": {
+                "tags": [
+                    "Connectors"
+                ],
+                "summary": "List connectors of an organization",
+                "description": "Returns a paginated list of connectors belonging to the given organization.",
+                "operationId": "indexConnectors",
+                "parameters": [
+                    {
+                        "name": "organization_id",
+                        "in": "query",
+                        "description": "ID of the organization to filter connectors by.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "perPage",
+                        "in": "query",
+                        "description": "Number of results per page. Defaults to 10.",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 10,
+                            "default": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Connectors retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Connectors retrieved successfully."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "organization_id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "POS System"
+                                                    },
+                                                    "active": {
+                                                        "type": "boolean",
+                                                        "example": true
+                                                    },
+                                                    "allowed_events": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "string",
+                                                            "example": "invoice.created"
+                                                        },
+                                                        "nullable": true
+                                                    },
+                                                    "last_used_at": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "example": "2026-05-19T10:00:00.000000Z",
+                                                        "nullable": true
+                                                    },
+                                                    "created_at": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "example": "2026-05-19T08:00:00.000000Z"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "pagination": {
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "last_page": {
+                                                    "type": "integer",
+                                                    "example": 2
+                                                },
+                                                "per_page": {
+                                                    "type": "integer",
+                                                    "example": 10
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "example": 15
+                                                },
+                                                "from": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "to": {
+                                                    "type": "integer",
+                                                    "example": 10
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error — organization_id missing or invalid",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Validation Error"
+                                        },
+                                        "errors": {
+                                            "properties": {
+                                                "organization_id": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "The organization id field is required."
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "A database error occurred."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Connectors"
+                ],
+                "summary": "Create a new connector",
+                "description": "Creates a connector for the given organization. The token is only returned in this response and cannot be retrieved later.",
+                "operationId": "storeConnector",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "organization_id",
+                                    "name"
+                                ],
+                                "properties": {
+                                    "organization_id": {
+                                        "description": "ID of the organization this connector belongs to.",
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "name": {
+                                        "description": "Unique name within the organization.",
+                                        "type": "string",
+                                        "example": "POS System",
+                                        "maxLength": 255,
+                                        "minLength": 3
+                                    },
+                                    "allowed_events": {
+                                        "description": "List of event types this connector is allowed to send. Null means all events are allowed.",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "example": "invoice.created"
+                                        },
+                                        "nullable": true
+                                    },
+                                    "active": {
+                                        "description": "Whether the connector is active. Defaults to true.",
+                                        "type": "boolean",
+                                        "example": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Connector created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Connector created successfully."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "organization_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "POS System"
+                                                },
+                                                "active": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "allowed_events": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "invoice.created"
+                                                    },
+                                                    "nullable": true
+                                                },
+                                                "last_used_at": {
+                                                    "type": "string",
+                                                    "example": null,
+                                                    "nullable": true
+                                                },
+                                                "token": {
+                                                    "description": "Bearer token — only visible at creation.",
+                                                    "type": "string",
+                                                    "example": "a3f1c2e4d5b6a7f8c9e0d1b2a3f4c5e6"
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2026-05-19T08:00:00.000000Z"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Validation Error"
+                                        },
+                                        "errors": {
+                                            "properties": {
+                                                "name": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "The name field is required."
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict — connector name already exists in this organization",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "A connector with the same name already exists in this organization."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "A database error occurred."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/connectors/{id}": {
+            "get": {
+                "tags": [
+                    "Connectors"
+                ],
+                "summary": "Get a connector by ID",
+                "description": "Returns a single connector. The token is never exposed in this response.",
+                "operationId": "showConnector",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the connector.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Connector retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Connector retrieved successfully."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "organization_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "POS System"
+                                                },
+                                                "active": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "allowed_events": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "invoice.created"
+                                                    },
+                                                    "nullable": true
+                                                },
+                                                "last_used_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": null,
+                                                    "nullable": true
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2026-05-19T08:00:00.000000Z"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Connector not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Connector not found with ID: 99"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "A database error occurred."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Connectors"
+                ],
+                "summary": "Update a connector",
+                "description": "Updates the name, allowed events, and active status. The token and organization cannot be changed.",
+                "operationId": "updateConnector",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the connector to update.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "active"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "description": "New name. Must be unique within the organization.",
+                                        "type": "string",
+                                        "example": "Updated POS System",
+                                        "maxLength": 255,
+                                        "minLength": 3
+                                    },
+                                    "allowed_events": {
+                                        "description": "Updated list of allowed event types. Send null to allow all events.",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "example": "invoice.created"
+                                        },
+                                        "nullable": true
+                                    },
+                                    "active": {
+                                        "description": "Whether the connector is active.",
+                                        "type": "boolean",
+                                        "example": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Connector updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Connector updated successfully."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "organization_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Updated POS System"
+                                                },
+                                                "active": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "allowed_events": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "invoice.created"
+                                                    },
+                                                    "nullable": true
+                                                },
+                                                "last_used_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": null,
+                                                    "nullable": true
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2026-05-19T08:00:00.000000Z"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Connector not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Connector not found with ID: 99"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Validation Error"
+                                        },
+                                        "errors": {
+                                            "properties": {
+                                                "name": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "The name field is required."
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict — connector name already exists in this organization",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "A connector with the same name already exists in this organization."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "A database error occurred."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Connectors"
+                ],
+                "summary": "Delete a connector",
+                "description": "Permanently deletes a connector. Existing integration events referencing this connector will also be removed (cascade).",
+                "operationId": "destroyConnector",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the connector to delete.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Connector deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Connector deleted successfully."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Connector not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Connector not found with ID: 99"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "A database error occurred."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/integration-events": {
+            "post": {
+                "tags": [
+                    "Integration Events"
+                ],
+                "summary": "Receive an integration event",
+                "description": "Ingests an event sent by an external connector (e.g. a POS system). Requires the connector's Bearer token for authentication.",
+                "operationId": "storeIntegrationEvent",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "event_type",
+                                    "payload"
+                                ],
+                                "properties": {
+                                    "external_event_id": {
+                                        "description": "Optional UUID from the originating system, used for idempotency. Must be unique across all events.",
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "example": "550e8400-e29b-41d4-a716-446655440000",
+                                        "nullable": true
+                                    },
+                                    "event_type": {
+                                        "description": "Type of the event being sent (e.g. invoice.created).",
+                                        "type": "string",
+                                        "example": "invoice.created",
+                                        "maxLength": 255
+                                    },
+                                    "payload": {
+                                        "description": "Arbitrary JSON object containing the event data.",
+                                        "type": "object",
+                                        "example": {
+                                            "invoice_number": "F001-00012",
+                                            "total": 250,
+                                            "currency": "PEN"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Event received and queued successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Event created successfully"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 42
+                                                },
+                                                "external_event_id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "example": "550e8400-e29b-41d4-a716-446655440000",
+                                                    "nullable": true
+                                                },
+                                                "connector_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "organization_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "event_type": {
+                                                    "type": "string",
+                                                    "example": "invoice.created"
+                                                },
+                                                "payload": {
+                                                    "type": "object",
+                                                    "example": {
+                                                        "invoice_number": "F001-00012",
+                                                        "total": 250
+                                                    }
+                                                },
+                                                "status": {
+                                                    "type": "string",
+                                                    "example": "pending"
+                                                },
+                                                "attempts": {
+                                                    "type": "integer",
+                                                    "example": 0
+                                                },
+                                                "received_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2026-05-19T10:00:00.000000Z",
+                                                    "nullable": true
+                                                },
+                                                "processed_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": null,
+                                                    "nullable": true
+                                                },
+                                                "error_message": {
+                                                    "type": "string",
+                                                    "example": null,
+                                                    "nullable": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated — missing or invalid connector token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthorized."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden — connector is inactive or event type is not allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "This connector is not allowed to send events of type invoice.created."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error — required fields missing or invalid",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Validation Error"
+                                        },
+                                        "errors": {
+                                            "properties": {
+                                                "event_type": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "The event type field is required."
+                                                    }
+                                                },
+                                                "payload": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "The payload field is required."
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "A database error occurred."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "connectorToken": []
+                    }
+                ]
+            }
+        },
+        "/api/integrations/taxcore/connect": {
+            "post": {
+                "tags": [
+                    "TaxCore Integration"
+                ],
+                "summary": "Register a TaxCore connection for an organization",
+                "description": "Uploads a PFX/P12 certificate and registers the TaxCore V-SDC connection for an organization. The certificate must contain OID 1.3.6.1.4.1.58220.2.7 (V-SDC URL). Only one active connection per organization is allowed.",
+                "operationId": "taxcoreConnect",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "organization_id",
+                                    "certificate",
+                                    "password",
+                                    "pac",
+                                    "environment"
+                                ],
+                                "properties": {
+                                    "organization_id": {
+                                        "description": "ID of the organization to register the connection for.",
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "certificate": {
+                                        "description": "PFX or P12 certificate file issued by TaxCore.",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "password": {
+                                        "description": "Password to decrypt the PFX certificate.",
+                                        "type": "string",
+                                        "example": "WKURRSGU"
+                                    },
+                                    "pac": {
+                                        "description": "PAC (POS Authentication Code) included in the certificate.",
+                                        "type": "string",
+                                        "example": "4YHBDH"
+                                    },
+                                    "environment": {
+                                        "description": "Target environment.",
+                                        "type": "string",
+                                        "example": "sandbox",
+                                        "enum": [
+                                            "sandbox",
+                                            "production"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Connection registered successfully.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Connected to TaxCore successfully."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "description": "Internal connection ID.",
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "environment": {
+                                                    "type": "string",
+                                                    "example": "sandbox"
+                                                },
+                                                "vsdc_url": {
+                                                    "type": "string",
+                                                    "example": "https://vsdc.sandbox.taxcore.online"
+                                                },
+                                                "active": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error — missing or invalid fields."
+                    },
+                    "409": {
+                        "description": "Business conflict — certificate expired, invalid, or connection already exists."
+                    }
+                }
+            }
+        },
+        "/api/integrations/taxcore/status": {
+            "get": {
+                "tags": [
+                    "TaxCore Integration"
+                ],
+                "summary": "Check V-SDC status for an organization",
+                "description": "Queries the V-SDC status endpoint using the active TaxCore connection for the given organization. Returns SDC date/time, UID, supported languages and tax rates.",
+                "operationId": "taxcoreStatus",
+                "parameters": [
+                    {
+                        "name": "organization_id",
+                        "in": "query",
+                        "description": "ID of the organization whose active TaxCore connection will be used.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "V-SDC status retrieved successfully.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "TaxCore connection is active."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "sdcDateTime": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2026-05-27T22:10:00+02:00"
+                                                },
+                                                "uid": {
+                                                    "type": "string",
+                                                    "example": "Dt1Ov1o0"
+                                                },
+                                                "taxCoreApi": {
+                                                    "type": "string",
+                                                    "example": "https://api.sandbox.taxcore.online"
+                                                },
+                                                "supportedLanguages": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "en"
+                                                    }
+                                                },
+                                                "taxRates": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "label": {
+                                                                "type": "string",
+                                                                "example": "A"
+                                                            },
+                                                            "rate": {
+                                                                "type": "number",
+                                                                "example": 9
+                                                            },
+                                                            "categoryName": {
+                                                                "type": "string",
+                                                                "example": "VAT"
+                                                            },
+                                                            "categoryType": {
+                                                                "type": "integer",
+                                                                "example": 0
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No active TaxCore connection found for the organization."
+                    },
+                    "422": {
+                        "description": "Validation error — organization_id missing or invalid."
+                    }
+                }
+            }
+        },
+        "/api/integrations/taxcore/environment-parameters": {
+            "get": {
+                "tags": [
+                    "TaxCore Integration"
+                ],
+                "summary": "Get V-SDC environment parameters for an organization",
+                "description": "Returns fiscal environment parameters from the V-SDC: organization name, TIN, timezone, city, and relevant API endpoints.",
+                "operationId": "taxcoreEnvironmentParameters",
+                "parameters": [
+                    {
+                        "name": "organization_id",
+                        "in": "query",
+                        "description": "ID of the organization whose active TaxCore connection will be used.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Environment parameters retrieved successfully.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Environment parameters retrieved."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "organizationName": {
+                                                    "type": "string",
+                                                    "example": "Worth It Ltd"
+                                                },
+                                                "tin": {
+                                                    "type": "string",
+                                                    "example": "718587"
+                                                },
+                                                "locationName": {
+                                                    "type": "string",
+                                                    "example": "Worth It Ltd"
+                                                },
+                                                "address": {
+                                                    "type": "string",
+                                                    "example": "Joint Court"
+                                                },
+                                                "city": {
+                                                    "type": "string",
+                                                    "example": "Beograd"
+                                                },
+                                                "timeZone": {
+                                                    "type": "string",
+                                                    "example": "Europe/Belgrade"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No active TaxCore connection found for the organization."
+                    },
+                    "422": {
+                        "description": "Validation error — organization_id missing or invalid."
+                    }
+                }
+            }
+        },
+        "/api/integrations/taxcore/invoices": {
+            "post": {
+                "tags": [
+                    "TaxCore Integration"
+                ],
+                "summary": "Sign and fiscalize an invoice",
+                "description": "Sends an invoice to the V-SDC for fiscal signing. The active TaxCore connection for the given organization is used automatically. Supports all invoice types (Normal, ProForma, Copy, Training, Advance) and transaction types (Sale, Refund). To cancel/reverse a previously signed invoice, send invoiceType=0 + transactionType=1 + referentDocumentNumber pointing to the original invoiceNumber.",
+                "operationId": "taxcoreSignInvoice",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "organization_id",
+                                    "invoiceType",
+                                    "transactionType",
+                                    "items",
+                                    "payment"
+                                ],
+                                "properties": {
+                                    "organization_id": {
+                                        "description": "ID of the organization whose active TaxCore connection will be used.",
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "invoiceType": {
+                                        "description": "0=Normal, 1=ProForma, 2=Copy, 3=Training, 4=Advance.",
+                                        "type": "integer",
+                                        "example": 0,
+                                        "enum": [
+                                            0,
+                                            1,
+                                            2,
+                                            3,
+                                            4
+                                        ]
+                                    },
+                                    "transactionType": {
+                                        "description": "0=Sale, 1=Refund.",
+                                        "type": "integer",
+                                        "example": 0,
+                                        "enum": [
+                                            0,
+                                            1
+                                        ]
+                                    },
+                                    "dateAndTimeOfIssue": {
+                                        "description": "Issue date/time. Defaults to current time if omitted.",
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "example": "2026-05-27T22:00:00+02:00",
+                                        "nullable": true
+                                    },
+                                    "cashier": {
+                                        "type": "string",
+                                        "example": "Juan Pérez",
+                                        "nullable": true,
+                                        "maxLength": 50
+                                    },
+                                    "buyerId": {
+                                        "type": "string",
+                                        "example": "12345678",
+                                        "nullable": true,
+                                        "maxLength": 20
+                                    },
+                                    "buyerCostCenterId": {
+                                        "type": "string",
+                                        "example": "CC-001",
+                                        "nullable": true,
+                                        "maxLength": 50
+                                    },
+                                    "invoiceNumber": {
+                                        "description": "Optional internal invoice number.",
+                                        "type": "string",
+                                        "example": "2026/001",
+                                        "nullable": true,
+                                        "maxLength": 60
+                                    },
+                                    "referentDocumentNumber": {
+                                        "description": "Required for Refund (transactionType=1), Copy (invoiceType=2), and Advance-linked invoices (invoiceType=4). Must match the invoiceNumber returned by the original signed invoice.",
+                                        "type": "string",
+                                        "example": "CPLP77KX-Dt1Ov1o0-1",
+                                        "nullable": true,
+                                        "maxLength": 50
+                                    },
+                                    "referentDocumentDT": {
+                                        "description": "Issue date/time of the referent document.",
+                                        "type": "string",
+                                        "example": "2026-05-27T22:00:00+02:00",
+                                        "nullable": true
+                                    },
+                                    "items": {
+                                        "type": "array",
+                                        "items": {
+                                            "required": [
+                                                "name",
+                                                "quantity",
+                                                "unitPrice",
+                                                "totalAmount",
+                                                "labels"
+                                            ],
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Producto A"
+                                                },
+                                                "quantity": {
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 2
+                                                },
+                                                "unitPrice": {
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 50
+                                                },
+                                                "totalAmount": {
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 100
+                                                },
+                                                "labels": {
+                                                    "description": "Tax category labels (e.g. A=VAT 9%).",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "A"
+                                                    },
+                                                    "minItems": 1
+                                                },
+                                                "gtin": {
+                                                    "description": "Optional barcode / GTIN.",
+                                                    "type": "string",
+                                                    "example": "01234567890128",
+                                                    "nullable": true,
+                                                    "maxLength": 14,
+                                                    "minLength": 8
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "minItems": 1
+                                    },
+                                    "payment": {
+                                        "type": "array",
+                                        "items": {
+                                            "required": [
+                                                "amount",
+                                                "paymentType"
+                                            ],
+                                            "properties": {
+                                                "amount": {
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 100
+                                                },
+                                                "paymentType": {
+                                                    "description": "0=Other, 1=Cash, 2=Card, 3=Check, 4=WireTransfer, 5=Voucher, 6=MobileMoney.",
+                                                    "type": "integer",
+                                                    "example": 1,
+                                                    "enum": [
+                                                        0,
+                                                        1,
+                                                        2,
+                                                        3,
+                                                        4,
+                                                        5,
+                                                        6
+                                                    ]
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "minItems": 1
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Invoice signed and fiscalized successfully.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Invoice signed successfully."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "invoiceNumber": {
+                                                    "description": "Signed invoice number. Use as referentDocumentNumber for future Refund/Copy.",
+                                                    "type": "string",
+                                                    "example": "CPLP77KX-Dt1Ov1o0-5"
+                                                },
+                                                "requestedBy": {
+                                                    "type": "string",
+                                                    "example": "CPLP77KX"
+                                                },
+                                                "signedBy": {
+                                                    "type": "string",
+                                                    "example": "Dt1Ov1o0"
+                                                },
+                                                "sdcDateTime": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2026-05-27T22:17:41+02:00"
+                                                },
+                                                "invoiceCounter": {
+                                                    "type": "string",
+                                                    "example": "5/5N"
+                                                },
+                                                "totalAmount": {
+                                                    "type": "number",
+                                                    "example": 100
+                                                },
+                                                "verificationUrl": {
+                                                    "type": "string",
+                                                    "example": "https://sandbox.taxcore.online/v/?vl=..."
+                                                },
+                                                "verificationQRCode": {
+                                                    "description": "Base64-encoded QR code image (GIF).",
+                                                    "type": "string"
+                                                },
+                                                "journal": {
+                                                    "description": "Printable ticket text.",
+                                                    "type": "string"
+                                                },
+                                                "signature": {
+                                                    "description": "Digital signature of the invoice.",
+                                                    "type": "string"
+                                                },
+                                                "businessName": {
+                                                    "type": "string",
+                                                    "example": "Worth It Ltd"
+                                                },
+                                                "tin": {
+                                                    "type": "string",
+                                                    "example": "718587"
+                                                },
+                                                "locationName": {
+                                                    "type": "string",
+                                                    "example": "Worth It Ltd"
+                                                },
+                                                "address": {
+                                                    "type": "string",
+                                                    "example": "Joint Court"
+                                                },
+                                                "taxItems": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "label": {
+                                                                "type": "string",
+                                                                "example": "A"
+                                                            },
+                                                            "categoryName": {
+                                                                "type": "string",
+                                                                "example": "VAT"
+                                                            },
+                                                            "rate": {
+                                                                "type": "number",
+                                                                "example": 9
+                                                            },
+                                                            "amount": {
+                                                                "type": "number",
+                                                                "example": 8.26
+                                                            },
+                                                            "categoryType": {
+                                                                "type": "integer",
+                                                                "example": 0
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No active TaxCore connection found for the organization."
+                    },
+                    "409": {
+                        "description": "V-SDC rejected the invoice — check items, labels or referentDocumentNumber."
+                    },
+                    "422": {
+                        "description": "Validation error — missing or invalid fields."
+                    }
+                }
+            }
+        },
+        "/api/integrations/xero/connect": {
+            "get": {
+                "tags": [
+                    "Xero Integration"
+                ],
+                "summary": "Initiate Xero OAuth2 authorization",
+                "description": "Stores the organization_id in the server session and redirects to the Xero authorization page to begin the OAuth2 flow. After the user grants access, Xero redirects to the callback URL where the connection is saved and linked to this organization.",
+                "operationId": "xeroConnect",
+                "parameters": [
+                    {
+                        "name": "organization_id",
+                        "in": "query",
+                        "description": "ID of the organization to link the Xero connection to.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "302": {
+                        "description": "Redirect to Xero authorization page."
+                    },
+                    "422": {
+                        "description": "Validation error — organization_id missing or not found."
+                    }
+                }
+            }
+        },
+        "/api/integrations/xero/callback": {
+            "get": {
+                "tags": [
+                    "Xero Integration"
+                ],
+                "summary": "Xero OAuth2 callback",
+                "description": "Handles the redirect from Xero after the user authorizes the app. Exchanges the authorization code for tokens, links the connection to the organization stored in session (set during /connect), and persists the XeroConnection record. This endpoint is called automatically by Xero — do not call it directly.",
+                "operationId": "xeroCallback",
+                "parameters": [
+                    {
+                        "name": "code",
+                        "in": "query",
+                        "description": "Authorization code returned by Xero.",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "abc123def456"
+                        }
+                    },
+                    {
+                        "name": "state",
+                        "in": "query",
+                        "description": "CSRF state token returned by Xero to verify the request origin.",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "145486afa9b821b18dc677cf3e1db200"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Xero connection established and linked to organization successfully.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Connected to Xero successfully"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "organization_id": {
+                                                    "description": "Organization this connection belongs to.",
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "tenant_id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "example": "b2c3d4e5-f6a7-8901-b2c3-d4e5f6a78901"
+                                                },
+                                                "tenant_name": {
+                                                    "type": "string",
+                                                    "example": "Demo Company (AU)"
+                                                },
+                                                "tenant_type": {
+                                                    "type": "string",
+                                                    "example": "ORGANISATION"
+                                                },
+                                                "expires_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2026-05-25T13:00:00.000000Z"
+                                                },
+                                                "scopes": {
+                                                    "type": "string",
+                                                    "example": "openid email profile offline_access accounting.settings accounting.transactions accounting.contacts"
+                                                },
+                                                "active": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Invalid OAuth callback — missing or malformed state parameter, or invalid authorization code.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Invalid OAuth callback: missing state parameter."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/integrations/xero/{connectionId}/contacts": {
+            "get": {
+                "tags": [
+                    "Xero Integration"
+                ],
+                "summary": "List Xero contacts for a connection",
+                "description": "Fetches the list of contacts from Xero using the given connection. The connection must belong to an organization. Tokens are refreshed automatically if expired.",
+                "operationId": "xeroGetContacts",
+                "parameters": [
+                    {
+                        "name": "connectionId",
+                        "in": "path",
+                        "description": "ID of the Xero connection (returned by the callback endpoint).",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Xero contacts fetched successfully.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Fetched Xero contacts successfully"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "Contacts": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "ContactID": {
+                                                                "type": "string",
+                                                                "format": "uuid",
+                                                                "example": "a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890"
+                                                            },
+                                                            "Name": {
+                                                                "type": "string",
+                                                                "example": "John Smith"
+                                                            },
+                                                            "EmailAddress": {
+                                                                "type": "string",
+                                                                "format": "email",
+                                                                "example": "john.smith@example.com"
+                                                            },
+                                                            "IsSupplier": {
+                                                                "type": "boolean",
+                                                                "example": false
+                                                            },
+                                                            "IsCustomer": {
+                                                                "type": "boolean",
+                                                                "example": true
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Xero connection not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Resource not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/integrations/products": {
+            "post": {
+                "tags": [
+                    "Xero Products"
+                ],
+                "summary": "Sync products to Xero",
+                "description": "Creates or updates one or more Items (Products & Services) in the Xero account linked to the connector's organization. Xero performs an upsert by `code` — if the item already exists it is updated, otherwise it is created. The calling system has full control over pricing and account codes. Requires the connector's Bearer token.",
+                "operationId": "syncXeroItems",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "items"
+                                ],
+                                "properties": {
+                                    "items": {
+                                        "type": "array",
+                                        "items": {
+                                            "required": [
+                                                "code",
+                                                "name",
+                                                "salePrice",
+                                                "costPrice",
+                                                "salesAccountCode",
+                                                "purchaseAccountCode"
+                                            ],
+                                            "properties": {
+                                                "code": {
+                                                    "description": "Unique item code used as the upsert key in Xero.",
+                                                    "type": "string",
+                                                    "example": "PROD-001",
+                                                    "maxLength": 30
+                                                },
+                                                "name": {
+                                                    "description": "Display name of the item.",
+                                                    "type": "string",
+                                                    "example": "Producto A",
+                                                    "maxLength": 50
+                                                },
+                                                "description": {
+                                                    "type": "string",
+                                                    "example": "Descripción del producto.",
+                                                    "nullable": true,
+                                                    "maxLength": 4000
+                                                },
+                                                "salePrice": {
+                                                    "description": "Unit sale price (SalesDetails.UnitPrice in Xero).",
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 50
+                                                },
+                                                "costPrice": {
+                                                    "description": "Unit cost price (PurchaseDetails.UnitPrice in Xero).",
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 35
+                                                },
+                                                "salesAccountCode": {
+                                                    "description": "Xero account code for sales (e.g. Revenue account).",
+                                                    "type": "string",
+                                                    "example": "200",
+                                                    "maxLength": 10
+                                                },
+                                                "purchaseAccountCode": {
+                                                    "description": "Xero account code for purchases (e.g. COGS account).",
+                                                    "type": "string",
+                                                    "example": "310",
+                                                    "maxLength": 10
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "minItems": 1
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Items synced successfully. Returns the raw Xero API response.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Items synced to Xero successfully."
+                                        },
+                                        "data": {
+                                            "description": "Raw Xero Items API response.",
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized — missing or invalid connector token."
+                    },
+                    "404": {
+                        "description": "No active Xero connection found for this organization."
+                    },
+                    "422": {
+                        "description": "Validation error — missing or invalid fields."
+                    }
+                },
+                "security": [
+                    {
+                        "connectorToken": []
+                    }
+                ]
+            }
+        },
+        "/api/organizations": {
+            "get": {
+                "tags": [
+                    "Organizations"
+                ],
+                "summary": "List organizations",
+                "description": "Returns a paginated list of organizations. Optionally filter by name using the search parameter.",
+                "operationId": "indexOrganizations",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Filter organizations by name (case-insensitive partial match).",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "Acme"
+                        }
+                    },
+                    {
+                        "name": "perPage",
+                        "in": "query",
+                        "description": "Number of results per page. Defaults to 10.",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 10,
+                            "default": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Organizations retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Organizations retrieved successfully."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "Acme Corporation"
+                                                    },
+                                                    "tax_id": {
+                                                        "type": "string",
+                                                        "example": "12345678901"
+                                                    },
+                                                    "active": {
+                                                        "type": "boolean",
+                                                        "example": true
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "pagination": {
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "last_page": {
+                                                    "type": "integer",
+                                                    "example": 3
+                                                },
+                                                "per_page": {
+                                                    "type": "integer",
+                                                    "example": 10
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "example": 25
+                                                },
+                                                "from": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "to": {
+                                                    "type": "integer",
+                                                    "example": 10
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "A database error occurred."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Organizations"
+                ],
+                "summary": "Create a new organization",
+                "description": "Creates an organization after validating the request at both HTTP and domain levels. The name must be unique (case-insensitive).",
+                "operationId": "storeOrganization",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "tax_id",
+                                    "active"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "description": "Organization display name. Must be unique.",
+                                        "type": "string",
+                                        "example": "Acme Corporation",
+                                        "maxLength": 255,
+                                        "minLength": 3
+                                    },
+                                    "tax_id": {
+                                        "description": "Tax identification number. Digits and hyphens only.",
+                                        "type": "string",
+                                        "example": "12345678901",
+                                        "maxLength": 20,
+                                        "minLength": 11
+                                    },
+                                    "active": {
+                                        "description": "Whether the organization is active.",
+                                        "type": "boolean",
+                                        "example": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Organization created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Organization created successfully."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Acme Corporation"
+                                                },
+                                                "tax_id": {
+                                                    "type": "string",
+                                                    "example": "12345678901"
+                                                },
+                                                "active": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error — request or domain",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Validation Error"
+                                        },
+                                        "errors": {
+                                            "properties": {
+                                                "name": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "The organization name must be at least 3 characters long."
+                                                    }
+                                                },
+                                                "tax_id": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "The organization's tax ID must be at least 11 characters long."
+                                                    }
+                                                },
+                                                "active": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "The active field is required."
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict — organization name already exists",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "An organization with the same name already exists."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "A database error occurred."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/organizations/{id}": {
+            "get": {
+                "tags": [
+                    "Organizations"
+                ],
+                "summary": "Get an organization by ID",
+                "description": "Returns a single organization by its ID.",
+                "operationId": "showOrganization",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the organization.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Organization retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Organization retrieved successfully."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Acme Corporation"
+                                                },
+                                                "tax_id": {
+                                                    "type": "string",
+                                                    "example": "12345678901"
+                                                },
+                                                "active": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Organization not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Organization not found with ID: 99"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "A database error occurred."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Organizations"
+                ],
+                "summary": "Update an organization",
+                "description": "Updates an existing organization. The name must remain unique (case-insensitive) across all organizations.",
+                "operationId": "updateOrganization",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the organization to update.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "tax_id",
+                                    "active"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "description": "Organization display name. Must be unique.",
+                                        "type": "string",
+                                        "example": "Acme Corporation Updated",
+                                        "maxLength": 255,
+                                        "minLength": 3
+                                    },
+                                    "tax_id": {
+                                        "description": "Tax identification number. Digits and hyphens only.",
+                                        "type": "string",
+                                        "example": "12345678901",
+                                        "maxLength": 20,
+                                        "minLength": 11
+                                    },
+                                    "active": {
+                                        "description": "Whether the organization is active.",
+                                        "type": "boolean",
+                                        "example": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Organization updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Organization updated successfully."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Acme Corporation Updated"
+                                                },
+                                                "tax_id": {
+                                                    "type": "string",
+                                                    "example": "12345678901"
+                                                },
+                                                "active": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Organization not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Organization not found with ID: 99"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict — organization name already exists",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "An organization with the same name already exists."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Validation Error"
+                                        },
+                                        "errors": {
+                                            "properties": {
+                                                "name": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "The organization name must be at least 3 characters long."
+                                                    }
+                                                },
+                                                "tax_id": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "The organization's tax ID must be at least 11 characters long."
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "A database error occurred."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Organizations"
+                ],
+                "summary": "Delete an organization",
+                "description": "Deletes an organization by ID. The operation is rejected if the organization has associated records (e.g. connectors) to avoid orphaned references.",
+                "operationId": "destroyOrganization",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the organization to delete.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Organization deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Organization deleted successfully."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Organization not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Organization not found with ID: 1"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Cannot delete — organization has associated records",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Cannot delete Organization: it has associated records in [connectors]."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "A database error occurred."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/sales": {
+            "post": {
+                "tags": [
+                    "Sales"
+                ],
+                "summary": "Submit a sale for processing",
+                "description": "Accepts a sale payload and dispatches it for asynchronous processing. Step 1: creates a Xero Invoice (ACCREC). Step 2 (only if Xero succeeds): sends the invoice to TaxCore for fiscal signing. Returns immediately with a sale ID and `pending` status. Poll GET /api/sales/{id} for the result.",
+                "operationId": "storeSale",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "invoiceType",
+                                    "transactionType",
+                                    "buyer",
+                                    "items",
+                                    "payment"
+                                ],
+                                "properties": {
+                                    "invoiceType": {
+                                        "description": "0=Normal, 1=Proforma, 2=Copy, 3=Training, 4=Advance",
+                                        "type": "integer",
+                                        "example": 1,
+                                        "enum": [
+                                            0,
+                                            1,
+                                            2,
+                                            3,
+                                            4
+                                        ]
+                                    },
+                                    "transactionType": {
+                                        "description": "0=Sale, 1=Refund",
+                                        "type": "integer",
+                                        "example": 0,
+                                        "enum": [
+                                            0,
+                                            1
+                                        ]
+                                    },
+                                    "cashier": {
+                                        "type": "string",
+                                        "example": "Juan Pérez",
+                                        "nullable": true,
+                                        "maxLength": 50
+                                    },
+                                    "dueDate": {
+                                        "description": "Invoice due date sent to Xero (YYYY-MM-DD). Defaults to today if omitted.",
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2026-05-29",
+                                        "nullable": true
+                                    },
+                                    "referentDocumentNumber": {
+                                        "description": "Required for Refund (transactionType=1) or Copy/Advance (invoiceType=2 or 4).",
+                                        "type": "string",
+                                        "example": null,
+                                        "nullable": true,
+                                        "maxLength": 50
+                                    },
+                                    "buyer": {
+                                        "required": [
+                                            "name"
+                                        ],
+                                        "properties": {
+                                            "name": {
+                                                "description": "Buyer name used as Contact in Xero Invoice.",
+                                                "type": "string",
+                                                "example": "Empresa ABC d.o.o.",
+                                                "maxLength": 255
+                                            },
+                                            "id": {
+                                                "description": "Buyer tax ID sent to TaxCore as buyerId.",
+                                                "type": "string",
+                                                "example": "101234567",
+                                                "nullable": true,
+                                                "maxLength": 20
+                                            }
+                                        },
+                                        "type": "object"
+                                    },
+                                    "items": {
+                                        "type": "array",
+                                        "items": {
+                                            "required": [
+                                                "code",
+                                                "name",
+                                                "quantity",
+                                                "unitPrice",
+                                                "totalAmount",
+                                                "labels",
+                                                "accountCode"
+                                            ],
+                                            "properties": {
+                                                "code": {
+                                                    "description": "Xero ItemCode — must match an existing Xero item.",
+                                                    "type": "string",
+                                                    "example": "PROD-001",
+                                                    "maxLength": 30
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Producto A",
+                                                    "maxLength": 2048
+                                                },
+                                                "quantity": {
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 2
+                                                },
+                                                "unitPrice": {
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 50
+                                                },
+                                                "totalAmount": {
+                                                    "description": "Sent to TaxCore.",
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 100
+                                                },
+                                                "labels": {
+                                                    "description": "TaxCore fiscal tax labels.",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "A"
+                                                    },
+                                                    "minItems": 1
+                                                },
+                                                "accountCode": {
+                                                    "description": "Xero account code for the line item.",
+                                                    "type": "string",
+                                                    "example": "200",
+                                                    "maxLength": 10
+                                                },
+                                                "gtin": {
+                                                    "description": "Optional GTIN for TaxCore.",
+                                                    "type": "string",
+                                                    "example": null,
+                                                    "nullable": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "minItems": 1
+                                    },
+                                    "payment": {
+                                        "type": "array",
+                                        "items": {
+                                            "required": [
+                                                "amount",
+                                                "paymentType"
+                                            ],
+                                            "properties": {
+                                                "amount": {
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 100
+                                                },
+                                                "paymentType": {
+                                                    "description": "0=Other, 1=Cash, 2=Card, 3=Check, 4=WireTransfer, 5=Voucher, 6=MobileMoney",
+                                                    "type": "integer",
+                                                    "example": 1,
+                                                    "enum": [
+                                                        0,
+                                                        1,
+                                                        2,
+                                                        3,
+                                                        4,
+                                                        5,
+                                                        6
+                                                    ]
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "minItems": 1
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "202": {
+                        "description": "Sale accepted for processing.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Sale submitted for processing."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "status": {
+                                                    "type": "string",
+                                                    "example": "pending"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized — missing or invalid connector token."
+                    },
+                    "422": {
+                        "description": "Validation error — missing or invalid fields."
+                    }
+                },
+                "security": [
+                    {
+                        "connectorToken": []
+                    }
+                ]
+            }
+        },
+        "/api/sales/{id}": {
+            "get": {
+                "tags": [
+                    "Sales"
+                ],
+                "summary": "Get sale processing result",
+                "description": "Returns the current status and result of a previously submitted sale. Poll this endpoint until status is `completed` or `failed`. On `completed`, `fiscal_number` and `xero_invoice_id` are populated.",
+                "operationId": "showSale",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sale record retrieved.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Sale retrieved."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "status": {
+                                                    "type": "string",
+                                                    "example": "completed",
+                                                    "enum": [
+                                                        "pending",
+                                                        "processing",
+                                                        "completed",
+                                                        "failed"
+                                                    ]
+                                                },
+                                                "xero_invoice_id": {
+                                                    "type": "string",
+                                                    "example": "a94a8fe5-ccb1-4f4c-b49e-e1d8ae3e4f5b",
+                                                    "nullable": true
+                                                },
+                                                "fiscal_number": {
+                                                    "type": "string",
+                                                    "example": "7YTQL8TY-8TQL-4900-3323-5L8TQLM7FCME",
+                                                    "nullable": true
+                                                },
+                                                "fiscal_result": {
+                                                    "description": "Full TaxCore fiscal response.",
+                                                    "type": "object",
+                                                    "nullable": true
+                                                },
+                                                "xero_result": {
+                                                    "description": "Full Xero Invoice response.",
+                                                    "type": "object",
+                                                    "nullable": true
+                                                },
+                                                "error_message": {
+                                                    "type": "string",
+                                                    "example": null,
+                                                    "nullable": true
+                                                },
+                                                "attempts": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "processed_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "nullable": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized — missing or invalid connector token."
+                    },
+                    "404": {
+                        "description": "Sale not found."
+                    }
+                },
+                "security": [
+                    {
+                        "connectorToken": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "connectorToken": {
+                "type": "http",
+                "description": "Bearer token issued when a Connector is created. Only visible at creation time.",
+                "scheme": "bearer"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Connectors",
+            "description": "Endpoints for managing connectors. A connector represents an external system integration point linked to an organization."
+        },
+        {
+            "name": "Integration Events",
+            "description": "Endpoints for receiving integration events from external connectors."
+        },
+        {
+            "name": "TaxCore Integration",
+            "description": "Endpoints for managing TaxCore fiscal integration. Requires an active TaxCore connection for the organization (registered via /connect)."
+        },
+        {
+            "name": "Xero Integration",
+            "description": "Endpoints for connecting and interacting with the Xero accounting platform via OAuth2."
+        },
+        {
+            "name": "Xero Products",
+            "description": "Endpoints for syncing products (Items) to the Xero accounting platform. Requires an active Xero connection for the organization and a valid connector Bearer token."
+        },
+        {
+            "name": "Organizations",
+            "description": "Endpoints for managing organizations"
+        },
+        {
+            "name": "Sales",
+            "description": "Endpoints for submitting sales. Each sale is registered asynchronously in both Xero (Invoice ACCREC) and TaxCore (fiscal signing). Requires the connector's Bearer token."
+        }
+    ]
+}
