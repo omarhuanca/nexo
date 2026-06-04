@@ -22,8 +22,11 @@ class XeroConnection extends BaseEntity
     ];
 
     protected $casts = [
-        'expires_at' => 'datetime',
-        'active' => 'boolean',
+        'access_token'  => 'encrypted',
+        'refresh_token' => 'encrypted',
+        'scopes'        => 'encrypted',
+        'expires_at'    => 'datetime',
+        'active'        => 'boolean',
     ];
 
     public function organization()
