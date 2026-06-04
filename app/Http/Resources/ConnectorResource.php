@@ -16,8 +16,8 @@ class ConnectorResource extends JsonResource
             'active'          => $this->active,
             'allowed_events'  => $this->allowed_events,
             'last_used_at'    => $this->last_used_at?->toISOString(),
-            // El token solo se expone en la respuesta de creación
-            'token'           => $this->when($this->wasRecentlyCreated, $this->token),
+            // El token en claro solo se expone una vez, en la respuesta de creación
+            'token'           => $this->when($this->wasRecentlyCreated, $this->resource->plainToken),
             'created_at'      => $this->created_at?->toISOString(),
         ];
     }

@@ -14,6 +14,11 @@ class Connector extends BaseEntity
     use HasFactory, GettersAndSetters;
     protected $table = 'connectors';
 
+    /**
+     * Plain-text token set transiently after creation — never persisted.
+     */
+    public ?string $plainToken = null;
+
     protected $fillable = [
         'organization_id',
         'name',

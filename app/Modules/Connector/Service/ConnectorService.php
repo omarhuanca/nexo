@@ -24,10 +24,13 @@ class ConnectorService
         $connector = new Connector();
         $connector->setOrganizationId($organizationId);
         $connector->setName($name);
-        $connector->setToken(bin2hex(random_bytes(16)));
+        $plainToken = bin2hex(random_bytes(32));
+        $connector->setToken(hash('sha256', $plainToken));
         $connector->setActive($active);
         $connector->setAllowedEvents(empty($allowedEvents) ? null : $allowedEvents);
-        return $this->connectorRepository->saveReturn($connector);
+        $saved = $this->connectorRepository->saveReturn($connector);
+        $saved->plainToken = $plainToken;
+        return $saved;
     }
 
     public function getConnectorById(int $id): Connector
