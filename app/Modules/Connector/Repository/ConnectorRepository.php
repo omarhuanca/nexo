@@ -19,6 +19,11 @@ class ConnectorRepository extends AbstractRepository
             ->paginate($perPage);
     }
 
+    public function findByTokenHash(string $hash): ?Connector
+    {
+        return $this->model->where('token', $hash)->first();
+    }
+
     public function existsByNameInOrganization(string $name, int $organizationId, ?int $excludeId = null): bool
     {
         return $this->model

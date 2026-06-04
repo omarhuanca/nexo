@@ -22,8 +22,10 @@ class ConnectorAuthenticationMiddleware
 
         if(!$token) return ApiResponse::error('Unauthorized', 401);
 
+        $hashedToken = hash('sha256', $token);
+
         try{
-            $connector = $this->connectorRepository->findBy('token', $token);
+            $connector = $this->connectorRepository->findByTokenHash($hashedToken);
         } catch (\Exception $e) {
             return ApiResponse::error('Unauthorized', 401);
         }
