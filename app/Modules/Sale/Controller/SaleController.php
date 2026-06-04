@@ -5,9 +5,7 @@ namespace App\Modules\Sale\Controller;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SaleRequest;
 use App\Http\Responses\ApiResponse;
-use App\Jobs\ProcessSaleJob;
-use App\Modules\Sale\Domain\Sale;
-use App\Modules\Sale\Repository\SaleRepository;
+use App\Modules\Sale\Service\SaleService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use OpenApi\Annotations as OA;
@@ -20,7 +18,7 @@ use OpenApi\Annotations as OA;
  */
 class SaleController extends Controller
 {
-    public function __construct(private readonly SaleRepository $saleRepository) {}
+    public function __construct(private readonly SaleService $saleService) {}
 
     /**
      * @OA\Post(
@@ -95,17 +93,7 @@ class SaleController extends Controller
     public function store(SaleRequest $request): JsonResponse
     {
         $connector = $request->attributes->get('connector');
-
-        $sale = new Sale();
-        $sale->setOrganizationId($connector->getOrganizationId());
-        $sale->setConnectorId($connector->getId());
-        $sale->setStatus('pending');
-        $sale->setPayload($request->validated());
-        $sale->setAttempts(0);
-
-        $sale = $this->saleRepository->saveReturn($sale);
-
-        ProcessSaleJob::dispatch($sale->getId())->onQueue('sales');
+        $sale = $this->saleService->createSale($connector, $request->validated());
 
         return ApiResponse::success('Sale submitted for processing.', 202, [
             'id'     => $sale->getId(),
@@ -150,7 +138,7 @@ class SaleController extends Controller
     public function show(Request $request, int $id): JsonResponse
     {
         $connector = $request->attributes->get('connector');
-        $sale      = $this->saleRepository->findByIdForOrganization($id, $connector->getOrganizationId());
+        $sale      = $this->saleService->getSaleById($id, $connector->getOrganizationId());
 
         return ApiResponse::success('Sale retrieved.', 200, $sale);
     }

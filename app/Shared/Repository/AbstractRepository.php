@@ -85,6 +85,13 @@ abstract class AbstractRepository
      */
     public function findBy(string $field, mixed $value): object
     {
+        $allowed = $this->model->getFillable();
+        if (!in_array($field, $allowed, true)) {
+            throw new \InvalidArgumentException(
+                "Field '{$field}' is not a valid searchable column for " . class_basename($this->model) . "."
+            );
+        }
+
         try {
             if (is_string($value)) {
                 // Case-insensitive (sin distinción de mayúsculas)

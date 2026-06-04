@@ -6,7 +6,6 @@ use App\Modules\Integration\TaxCore\Service\TaxCoreConnectionService;
 use App\Modules\Integration\TaxCore\Service\TaxCoreSaleService;
 use App\Modules\Integration\Xero\Service\XeroConnectionService;
 use App\Modules\Integration\Xero\Service\XeroInvoiceSaleService;
-use App\Modules\Sale\Domain\Sale;
 use App\Modules\Sale\Repository\SaleRepository;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -19,11 +18,6 @@ class ProcessSaleJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    /**
-     * Retry up to 3 times with exponential backoff (seconds).
-     * If Xero fails on all 3 attempts the job moves to failed_jobs
-     * and failed() marks the sale as failed — TaxCore is never called.
-     */
     public int $tries = 3;
     public array $backoff = [10, 30, 60];
 
@@ -35,9 +29,9 @@ class ProcessSaleJob implements ShouldQueue
         XeroInvoiceSaleService $xeroInvoiceSaleService,
         TaxCoreConnectionService $taxCoreConnectionService,
         TaxCoreSaleService $taxCoreSaleService,
+        
     ): void {
-        // Pessimistic lock: prevents concurrent workers from processing the same sale.
-        $sale = Sale::lockForUpdate()->find($this->saleId);
+        $sale = $saleRepository->findByIdWithLock($this->saleId);
 
         if (!$sale || $sale->getStatus() === 'completed') {
             return;
@@ -45,54 +39,45 @@ class ProcessSaleJob implements ShouldQueue
 
         $sale->setStatus('processing');
         $sale->setAttempts($sale->getAttempts() + 1);
-        $sale->save();
+        $saleRepository->save($sale);
 
         $payload        = $sale->getPayload();
         $organizationId = $sale->getOrganizationId();
 
-        // ── Step 1: Xero Invoice (ACCREC) ────────────────────────────────────
-        // Idempotent: skip if already completed on a previous attempt.
+
         if ($sale->getXeroInvoiceId() === null) {
             $xeroConnection = $xeroConnectionService->findActiveByOrganization($organizationId);
             $xeroResult     = $xeroInvoiceSaleService->createInvoice($xeroConnection, $payload);
 
             $sale->setXeroInvoiceId($xeroResult['Invoices'][0]['InvoiceID'] ?? null);
             $sale->setXeroResult($xeroResult);
-            $sale->save();
-            // Any exception thrown here will trigger a retry.
-            // After all retries are exhausted, failed() is called and
-            // the sale is marked as failed without ever reaching TaxCore.
+            $saleRepository->save($sale);
         }
 
-        // ── Step 2: TaxCore Fiscal Signing ───────────────────────────────────
-        // Only reached when Xero succeeded. Also idempotent on retry.
         if ($sale->getFiscalNumber() === null) {
             $taxCoreConnection = $taxCoreConnectionService->findActiveByOrganization($organizationId);
             $fiscalResult      = $taxCoreSaleService->signInvoice($taxCoreConnection, $payload);
 
             $sale->setFiscalNumber($fiscalResult['invoiceNumber'] ?? null);
             $sale->setFiscalResult($fiscalResult);
-            $sale->save();
+            $saleRepository->save($sale);
         }
 
         $sale->setStatus('completed');
         $sale->setProcessedAt(now());
         $sale->setErrorMessage(null);
-        $sale->save();
+        $saleRepository->save($sale);
     }
 
-    /**
-     * Called by Laravel when all retry attempts are exhausted.
-     * Marks the sale as failed and stores the last error message.
-     */
+
     public function failed(Throwable $exception): void
     {
-        $sale = Sale::find($this->saleId);
+        /** @var SaleRepository $saleRepository */
+        $saleRepository = app(SaleRepository::class);
+        $sale = $saleRepository->findById($this->saleId);
 
-        if ($sale) {
-            $sale->setStatus('failed');
-            $sale->setErrorMessage($exception->getMessage());
-            $sale->save();
-        }
+        $sale->setStatus('failed');
+        $sale->setErrorMessage($exception->getMessage());
+        $saleRepository->save($sale);
     }
 }

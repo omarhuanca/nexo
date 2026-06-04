@@ -13,6 +13,11 @@ class SaleRepository extends AbstractRepository
         parent::__construct($model);
     }
 
+    public function findByIdWithLock(int $id): ?Sale
+    {
+        return $this->model->lockForUpdate()->find($id);
+    }
+
     public function findByIdForOrganization(int $id, int $organizationId): Sale
     {
         $sale = $this->model
