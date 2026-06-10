@@ -121,6 +121,13 @@ return [
             ],
 
             /**
+             * analyser: defaults to \OpenApi\StaticAnalyser .
+             *
+             * @see \OpenApi\scan
+             */
+            'analyser' => null,
+
+            /**
              * analysis: defaults to a new \OpenApi\Analysis .
              *
              * @see \OpenApi\scan
