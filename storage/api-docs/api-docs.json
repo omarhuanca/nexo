@@ -9,6 +9,10 @@
         {
             "url": "http://127.0.0.1:8000",
             "description": "Local Server"
+        },
+        {
+            "url": "https://backendnexo.shop",
+            "description": "Mounted Server"
         }
     ],
     "paths": {
@@ -137,7 +141,7 @@
                         }
                     },
                     "422": {
-                        "description": "Validation error — organization_id missing or invalid",
+                        "description": "Validation error",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -149,18 +153,6 @@
                                         "message": {
                                             "type": "string",
                                             "example": "Validation Error"
-                                        },
-                                        "errors": {
-                                            "properties": {
-                                                "organization_id": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "type": "string",
-                                                        "example": "The organization id field is required."
-                                                    }
-                                                }
-                                            },
-                                            "type": "object"
                                         }
                                     },
                                     "type": "object"
@@ -181,10 +173,6 @@
                                         "message": {
                                             "type": "string",
                                             "example": "A database error occurred."
-                                        },
-                                        "data": {
-                                            "type": "array",
-                                            "items": {}
                                         }
                                     },
                                     "type": "object"
@@ -2804,7 +2792,7 @@
                     "Sales"
                 ],
                 "summary": "Submit a sale for processing",
-                "description": "Accepts a sale payload and dispatches it for asynchronous processing. Step 1: creates a Xero Invoice (ACCREC). Step 2 (only if Xero succeeds): sends the invoice to TaxCore for fiscal signing. Returns immediately with a sale ID and `pending` status. Poll GET /api/sales/{id} for the result.",
+                "description": "Accepts a sale payload and dispatches it for asynchronous processing. Step 1: creates a Xero Invoice (ACCREC). Step 2 (only if Xero succeeds): sends the invoice to TaxCore for fiscal signing. Returns immediately with a sale ID and pending status. Poll GET /api/sales/{id} for the result.",
                 "operationId": "storeSale",
                 "requestBody": {
                     "required": true,
@@ -3039,7 +3027,7 @@
                     "Sales"
                 ],
                 "summary": "Get sale processing result",
-                "description": "Returns the current status and result of a previously submitted sale. Poll this endpoint until status is `completed` or `failed`. On `completed`, `fiscal_number` and `xero_invoice_id` are populated.",
+                "description": "Returns the current status and result of a previously submitted sale. Poll this endpoint until status is completed or failed. On completed, fiscal_number and xero_invoice_id are populated.",
                 "operationId": "showSale",
                 "parameters": [
                     {
