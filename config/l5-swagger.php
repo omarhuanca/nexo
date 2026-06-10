@@ -121,16 +121,6 @@ return [
             ],
 
             /**
-             * analyser: defaults to \OpenApi\StaticAnalyser .
-             *
-             * @see \OpenApi\scan
-             */
-            'analyser' => new \OpenApi\Analysers\ReflectionAnalyser([
-                new \OpenApi\Analysers\DocBlockAnnotationFactory(),
-                new \OpenApi\Analysers\AttributeAnnotationFactory(),
-            ]),
-
-            /**
              * analysis: defaults to a new \OpenApi\Analysis .
              *
              * @see \OpenApi\scan
