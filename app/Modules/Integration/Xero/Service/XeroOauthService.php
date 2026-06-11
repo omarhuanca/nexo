@@ -83,7 +83,7 @@ class XeroOauthService
                 'grant_type' => 'authorization_code',
                 'client_id' => config('xero.client_id'),
                 'client_secret' => config('xero.client_secret'),
-                'redirect_uri' => config('xero.redirect_uri'),
+                'redirect_uri' => 'https://backendnexo.shop/api/integrations/xero/callback',
                 'code' => $request->input('code'),
             ]
 
