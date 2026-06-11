@@ -21,7 +21,7 @@ class XeroOauthService
         $this->provider = new GenericProvider([
             'clientId' => config('xero.client_id'),
             'clientSecret' => config('xero.client_secret'),
-            'redirectUri' => config('xero.redirect_uri'),
+            'redirectUri' => 'https://backendnexo.shop/api/integrations/xero/callback',
             'urlAuthorize' => config('xero.url_authorize'),
             'urlAccessToken' => config('xero.url_access_token'),
             'urlResourceOwnerDetails' => config('xero.url_resource_owner'),
