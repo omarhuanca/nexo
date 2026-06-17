@@ -19,7 +19,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->append(HandleCors::class);    
+        $middleware->append(HandleCors::class);
+        $middleware->append(App\Http\Middleware\AssignRequestContext::class);
         $middleware->alias([
             'connector.auth' => App\Http\Middleware\ConnectorAuthenticationMiddleware::class,
         ]);

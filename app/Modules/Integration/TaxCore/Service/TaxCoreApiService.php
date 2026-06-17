@@ -2,6 +2,7 @@
 
 namespace App\Modules\Integration\TaxCore\Service;
 
+use App\Events\TaxCore\TaxCoreApiCall;
 use App\Modules\Integration\TaxCore\Domain\TaxCoreConnection;
 use App\Shared\Helpers\ErrorResponseHelper;
 use Illuminate\Http\Client\PendingRequest;
@@ -16,7 +17,13 @@ class TaxCoreApiService
 
     public function get(TaxCoreConnection $connection, string $endpoint): Response
     {
+        $startedAt = (int) (microtime(true) * 1000);
+
         $response = $this->buildClient($connection)->get($endpoint);
+
+        $durationMs = (int) (microtime(true) * 1000) - $startedAt;
+        event(new TaxCoreApiCall('GET', $endpoint, $response->status(), $durationMs, $connection->getId()));
+
         ErrorResponseHelper::handleErrors($response);
 
         return $response;
@@ -24,7 +31,13 @@ class TaxCoreApiService
 
     public function post(TaxCoreConnection $connection, string $endpoint, array $data): Response
     {
+        $startedAt = (int) (microtime(true) * 1000);
+
         $response = $this->buildClient($connection)->post($endpoint, $data);
+
+        $durationMs = (int) (microtime(true) * 1000) - $startedAt;
+        event(new TaxCoreApiCall('POST', $endpoint, $response->status(), $durationMs, $connection->getId()));
+
         ErrorResponseHelper::handleErrors($response);
 
         return $response;

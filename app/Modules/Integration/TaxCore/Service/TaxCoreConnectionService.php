@@ -2,6 +2,7 @@
 
 namespace App\Modules\Integration\TaxCore\Service;
 
+use App\Events\TaxCore\TaxCoreCertUploaded;
 use App\Modules\Integration\TaxCore\Domain\TaxCoreConnection;
 use App\Modules\Integration\TaxCore\Repository\TaxCoreConnectionRepository;
 use Illuminate\Http\UploadedFile;
@@ -30,6 +31,13 @@ class TaxCoreConnectionService
         $connection->setVsdcUrl($vsdcUrl);
 
         $this->repository->save($connection);
+
+        event(new TaxCoreCertUploaded(
+            $organizationId,
+            $connection->getId(),
+            $environment,
+            $vsdcUrl,
+        ));
 
         return $connection;
     }
