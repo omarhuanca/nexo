@@ -123,7 +123,7 @@ class SaleController extends Controller
         $sale = $this->saleService->createSale($connector, $request->validated());
 
         return ApiResponse::success('Sale submitted for processing.', 202, [
-            'id'     => $sale->getId(),
+            'id' => $sale->getId(),
             'status' => $sale->getStatus(),
         ]);
     }

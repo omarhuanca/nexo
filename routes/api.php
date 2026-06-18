@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Integration\Xero\Controller\XeroWebhookController;
 use Illuminate\Support\Facades\Route;
 use App\Modules\Organization\Controller\OrganizationController;
 use App\Modules\Connector\Controller\ConnectorController;
@@ -47,3 +48,8 @@ Route::post('/integrations/taxcore/connect', [TaxCoreController::class, 'connect
 Route::get('/integrations/taxcore/status', [TaxCoreController::class, 'status']);
 Route::get('/integrations/taxcore/environment-parameters',  [TaxCoreController::class, 'environmentParameters']);
 Route::post('/integrations/taxcore/invoices', [TaxCoreController::class, 'signInvoice']);
+
+
+// WEBHOOK RECEIVER
+
+Route::post('/integrations/xero/webhook', [XeroWebhookController::class, 'receive']);

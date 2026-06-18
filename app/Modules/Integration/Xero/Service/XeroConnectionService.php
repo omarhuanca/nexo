@@ -8,7 +8,9 @@ use App\Shared\Exceptions\NotFoundException;
 
 class XeroConnectionService
 {
-    public function __construct(private readonly XeroConnectionRepository $repository) {}
+    public function __construct(
+        private readonly XeroConnectionRepository $repository
+        ) {}
     public function saveOrUpdate(array $tokens, array $connection, int $organizationId) : XeroConnection
     {
         $existing = $this->repository->findByTenantId($connection['tenantId']);
@@ -47,6 +49,11 @@ class XeroConnectionService
     public function findById(int $id): XeroConnection
     {
         return $this->repository->findById($id);
+    }
+
+    public function findByTenantId(string $id): XeroConnection
+    {
+        return $this->repository->findByTenantId($id);
     }
 
     public function findActiveByOrganization(int $organizationId): XeroConnection
