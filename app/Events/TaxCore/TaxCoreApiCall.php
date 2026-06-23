@@ -9,6 +9,6 @@ final readonly class TaxCoreApiCall
         public string $endpoint,
         public int $statusCode,
         public int $durationMs,
-        public ?int $connectionId = null,
+        public int $connectionId,
     ) {}
 }
