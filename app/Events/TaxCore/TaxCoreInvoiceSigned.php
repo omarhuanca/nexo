@@ -4,9 +4,17 @@ namespace App\Events\TaxCore;
 
 final readonly class TaxCoreInvoiceSigned
 {
+    public int $saleId;
+    public string $invoiceNumber;
+    public int $durationMs;
+
     public function __construct(
-        public int $saleId,
-        public string $invoiceNumber,
-        public int $durationMs,
-    ) {}
+        int $saleId,
+        string $invoiceNumber,
+        int $durationMs,
+    ) {
+        $this->saleId = $saleId;
+        $this->invoiceNumber = $invoiceNumber;
+        $this->durationMs = $durationMs;
+    }
 }

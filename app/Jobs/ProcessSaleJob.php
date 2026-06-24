@@ -27,10 +27,12 @@ class ProcessSaleJob implements ShouldQueue
     public int $timeout = 120;
 
     private int $startedAt;
+    private int $saleId;
 
-    public function __construct(private readonly int $saleId)
+    public function __construct(int $saleId)
     {
         $this->startedAt = (int) (microtime(true) * 1000);
+        $this->saleId = $saleId;
     }
 
     public function handle(

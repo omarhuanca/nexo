@@ -9,7 +9,12 @@ use Illuminate\Events\Attributes\AsEventListener;
 #[AsEventListener]
 final readonly class LogSaleFailed
 {
-    public function __construct(private LoggerService $logger) {}
+    private LoggerService $logger;
+
+    public function __construct(LoggerService $logger)
+    {
+        $this->logger = $logger;
+    }
 
     public function handle(SaleFailed $event): void
     {
