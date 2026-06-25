@@ -75,7 +75,7 @@ class XeroOauthService
         return $payload . '.' . $signature;
     }
 
-    public function xeroCallback(Request $request): array
+    public function xeroCallback(Request $request, int $organizationId): array
     {
         $response = HttpClientHelper::http()->asForm()->post(
             'https://identity.xero.com/connect/token',
@@ -98,6 +98,12 @@ class XeroOauthService
 
         if (empty($connections)) throw new BusinessConflictException('No Xero connections found for this account.');
         if(count($connections) > 1) throw new BusinessConflictException('Multiple Xero connections found for this account. Please disconnect other connections and try again.');
+
+        event(new \App\Events\Xero\XeroOAuthCallbackSuccess(
+            $organizationId,
+            $connections[0]['tenantId'] ?? 'unknown',
+            $connections[0]['tenantName'] ?? 'unknown',
+        ));
 
         return [
             'tokens' => $tokens,

@@ -107,7 +107,7 @@ class XeroController extends Controller
 
         $organizationId = $this->xeroOauthService->extractNexoOrganizationIdFromState($state);
 
-        $data = $this->xeroOauthService->xeroCallback($request);
+        $data = $this->xeroOauthService->xeroCallback($request, $organizationId);
         $connection = $this->xeroConnectionService->saveOrUpdate($data['tokens'], $data['connection'], $organizationId);
 
         return ApiResponse::success("Connected to Xero successfully", 200, $connection);

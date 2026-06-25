@@ -2,6 +2,7 @@
 
 namespace App\Modules\Sale\Service;
 
+use App\Events\Sale\SaleSubmitted;
 use App\Jobs\ProcessSaleJob;
 use App\Modules\Connector\Domain\Connector;
 use App\Modules\Sale\Domain\ListSalesCriteria;
@@ -23,6 +24,13 @@ class SaleService
         $sale->setAttempts(0);
 
         $sale = $this->saleRepository->saveReturn($sale);
+
+        event(new SaleSubmitted(
+            $sale->getId(),
+            $connector->getOrganizationId(),
+            $connector->getId(),
+            $payload,
+        ));
 
         ProcessSaleJob::dispatch($sale->getId())->onQueue('sales');
 
