@@ -14,6 +14,10 @@ use OpenApi\Attributes as OA;
     description: "Local Server"
 )]
 #[OA\Server(
+    url: "https://nexo.test",
+    description: "Herd Local Server (HTTPS)"
+)]
+#[OA\Server(
     url: "https://backendnexo.shop",
     description: "Mounted Server"
 )]

@@ -54,7 +54,7 @@ return [
 
         'stack' => [
             'driver' => 'stack',
-            'channels' => explode(',', (string) env('LOG_STACK', 'single')),
+            'channels' => explode(',', (string) env('LOG_STACK', 'single,audit')),
             'ignore_exceptions' => false,
         ],
 
@@ -125,6 +125,15 @@ return [
 
         'emergency' => [
             'path' => storage_path('logs/laravel.log'),
+        ],
+
+        'audit' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/audit.log'),
+            'level' => env('LOG_AUDIT_LEVEL', 'info'),
+            'days' => env('LOG_DAILY_DAYS', 90),
+            'replace_placeholders' => true,
+            'tap' => [App\Logging\CustomJsonFormatter::class],
         ],
 
     ],

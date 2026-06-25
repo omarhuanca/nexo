@@ -4,12 +4,12 @@ use App\Modules\Integration\Xero\Controller\XeroWebhookController;
 use Illuminate\Support\Facades\Route;
 use App\Modules\Organization\Controller\OrganizationController;
 use App\Modules\Connector\Controller\ConnectorController;
+use App\Modules\Integration\TaxCore\Controller\TaxCoreController;
 use App\Modules\Integration\Xero\Controller\XeroController;
 use App\Modules\Integration\Xero\Controller\XeroItemController;
 use App\Modules\IntegrationEvent\Controller\IntegrationEventController;
 use App\Modules\Sale\Controller\SaleController;
 use App\Modules\Agent\Controller\AgentController;
-use App\Modules\Integration\TaxCore\Controller\TaxCoreController;
 
 // ORGANIZATIONS ROUTES
 

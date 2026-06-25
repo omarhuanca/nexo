@@ -6,10 +6,11 @@ use App\Modules\Connector\Domain\Connector;
 use App\Modules\Organization\Domain\Organization;
 use App\Shared\Domain\BaseEntity;
 use App\Shared\Traits\GettersAndSetters;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Sale extends BaseEntity
 {
-    use GettersAndSetters;
+    use HasFactory, GettersAndSetters;
 
     protected $table = 'sales';
 
