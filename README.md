@@ -370,6 +370,8 @@ Controller reads $connector->getOrganizationId()
 | POST | `/api/integrations/taxcore/connect` | Register TaxCore cert |
 | GET | `/api/integrations/taxcore/status` | Check V-SDC status |
 | GET | `/api/integrations/taxcore/environment-parameters` | TaxCore env params |
+| GET | `/api/integrations/taxcore/invoices` | List fiscalized invoices (reads `sales` table) |
+| GET | `/api/integrations/taxcore/invoices/{id}` | Get a single fiscalized invoice with full payload + fiscal_result + xero_result |
 | GET | `/api/integrations/xero/connect` | Start Xero OAuth2 flow |
 | GET | `/api/integrations/xero/callback` | Xero OAuth2 callback |
 | GET | `/api/integrations/xero/{id}/contacts` | List Xero contacts |

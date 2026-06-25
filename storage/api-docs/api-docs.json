@@ -1364,6 +1364,133 @@
             }
         },
         "/api/integrations/taxcore/invoices": {
+            "get": {
+                "tags": [
+                    "TaxCore Integration"
+                ],
+                "summary": "List fiscalized invoices (read from local DB)",
+                "description": "Returns invoices persisted in the `sales` table after being signed by TaxCore. By default returns only `status=completed`. Supports filtering by organization, invoice/transaction type, fiscal number and date range. No authentication required.",
+                "operationId": "listTaxcoreInvoices",
+                "parameters": [
+                    {
+                        "name": "organization_id",
+                        "in": "query",
+                        "description": "ID of the organization whose invoices to list. If omitted, returns invoices for all organizations.",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "description": "Filter by status. Defaults to completed.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "completed",
+                            "enum": [
+                                "pending",
+                                "processing",
+                                "completed",
+                                "failed"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "invoiceType",
+                        "in": "query",
+                        "description": "0=Normal, 1=ProForma, 2=Copy, 3=Training, 4=Advance.",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "enum": [
+                                0,
+                                1,
+                                2,
+                                3,
+                                4
+                            ]
+                        }
+                    },
+                    {
+                        "name": "transactionType",
+                        "in": "query",
+                        "description": "0=Sale, 1=Refund.",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "enum": [
+                                0,
+                                1
+                            ]
+                        }
+                    },
+                    {
+                        "name": "fiscalNumber",
+                        "in": "query",
+                        "description": "Exact fiscal invoice number (TaxCore invoiceNumber).",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "CPLP77KX-Dt1Ov1o0-5"
+                        }
+                    },
+                    {
+                        "name": "dateFrom",
+                        "in": "query",
+                        "description": "Start date (YYYY-MM-DD). Filters by created_at.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-05-01"
+                        }
+                    },
+                    {
+                        "name": "dateTo",
+                        "in": "query",
+                        "description": "End date (YYYY-MM-DD). Must be on or after dateFrom.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-05-31"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1,
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "pageSize",
+                        "in": "query",
+                        "description": "Items per page (max 100).",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 50,
+                            "maximum": 100,
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Invoices retrieved successfully."
+                    },
+                    "422": {
+                        "description": "Validation error."
+                    }
+                }
+            },
             "post": {
                 "tags": [
                     "TaxCore Integration"
@@ -3130,6 +3257,49 @@
                         "connectorToken": []
                     }
                 ]
+            }
+        },
+        "/api/integrations/taxcore/invoices/{id}": {
+            "get": {
+                "tags": [
+                    "TaxCore Integration"
+                ],
+                "summary": "Get a single fiscalized invoice (read from local DB)",
+                "description": "Returns the full Sale record by its internal ID, including the original request payload, the TaxCore signed response and the Xero response. Reads from the `sales` table. If organization_id is provided, verifies the sale belongs to that organization. No authentication required.",
+                "operationId": "getTaxcoreInvoice",
+                "parameters": [
+                    {
+                        "name": "organization_id",
+                        "in": "query",
+                        "description": "ID of the organization that owns the invoice. If omitted, the sale is returned regardless of organization.",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Internal Sale ID.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 12
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Invoice retrieved successfully."
+                    },
+                    "404": {
+                        "description": "Invoice not found for this organization."
+                    },
+                    "422": {
+                        "description": "Validation error — organization_id missing/invalid."
+                    }
+                }
             }
         }
     },

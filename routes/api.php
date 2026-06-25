@@ -1,13 +1,13 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Modules\Organization\Controller\OrganizationController;
 use App\Modules\Connector\Controller\ConnectorController;
+use App\Modules\Integration\TaxCore\Controller\TaxCoreController;
 use App\Modules\Integration\Xero\Controller\XeroController;
 use App\Modules\Integration\Xero\Controller\XeroItemController;
 use App\Modules\IntegrationEvent\Controller\IntegrationEventController;
+use App\Modules\Organization\Controller\OrganizationController;
 use App\Modules\Sale\Controller\SaleController;
-use App\Modules\Integration\TaxCore\Controller\TaxCoreController;
+use Illuminate\Support\Facades\Route;
 
 // ORGANIZATIONS ROUTES
 
@@ -45,5 +45,10 @@ Route::get('/integrations/xero/{connectionId}/contacts', [XeroController::class,
 
 Route::post('/integrations/taxcore/connect', [TaxCoreController::class, 'connect']);
 Route::get('/integrations/taxcore/status', [TaxCoreController::class, 'status']);
-Route::get('/integrations/taxcore/environment-parameters',  [TaxCoreController::class, 'environmentParameters']);
+Route::get('/integrations/taxcore/environment-parameters', [TaxCoreController::class, 'environmentParameters']);
 Route::post('/integrations/taxcore/invoices', [TaxCoreController::class, 'signInvoice']);
+
+// Public read access to fiscalized invoices (reads from local `sales` table).
+Route::get('/integrations/taxcore/invoices', [SaleController::class, 'index']);
+Route::get('/integrations/taxcore/invoices/{id}', [SaleController::class, 'getInvoice'])
+    ->where('id', '[0-9]+');

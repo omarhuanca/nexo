@@ -5,8 +5,10 @@ namespace App\Modules\Sale\Service;
 use App\Events\Sale\SaleSubmitted;
 use App\Jobs\ProcessSaleJob;
 use App\Modules\Connector\Domain\Connector;
+use App\Modules\Sale\Domain\ListSalesCriteria;
 use App\Modules\Sale\Domain\Sale;
 use App\Modules\Sale\Repository\SaleRepository;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class SaleService
 {
@@ -14,7 +16,7 @@ class SaleService
 
     public function createSale(Connector $connector, array $payload): Sale
     {
-        $sale = new Sale();
+        $sale = new Sale;
         $sale->setOrganizationId($connector->getOrganizationId());
         $sale->setConnectorId($connector->getId());
         $sale->setStatus('pending');
@@ -35,8 +37,18 @@ class SaleService
         return $sale;
     }
 
-    public function getSaleById(int $id, int $organizationId): Sale
+    public function getSaleById(int $id, ?int $organizationId = null): Sale
     {
         return $this->saleRepository->findByIdForOrganization($id, $organizationId);
+    }
+
+    public function listInvoices(?int $organizationId, ListSalesCriteria $criteria): LengthAwarePaginator
+    {
+        return $this->saleRepository->listForOrganization($organizationId, $criteria);
+    }
+
+    public function getInvoice(int $id, ?int $organizationId = null): Sale
+    {
+        return $this->getSaleById($id, $organizationId);
     }
 }

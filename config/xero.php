@@ -3,7 +3,7 @@
 return [
     'client_id' => env('XERO_CLIENT_ID'),
     'client_secret' => env('XERO_CLIENT_SECRET'),
-    'redirect_uri'=> 'https://backendnexo.shop/api/integrations/xero/callback',
+    'redirect_uri' => 'https://backendnexo.shop/api/integrations/xero/callback',
     'scopes' => env(
         'XERO_SCOPES',
         'openid email profile offline_access accounting.settings accounting.transactions accounting.contacts'
