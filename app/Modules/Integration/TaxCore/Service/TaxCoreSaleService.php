@@ -2,13 +2,9 @@
 
 namespace App\Modules\Integration\TaxCore\Service;
 
-use App\Modules\Integration\TaxCore\Domain\TaxCoreConnection;
-
 class TaxCoreSaleService
 {
-    public function __construct(private readonly TaxCoreApiService $apiService) {}
-
-    public function signInvoice(TaxCoreConnection $connection, array $payload): array
+    public function buildPayload(array $payload): array
     {
         $taxCorePayload = [
             'invoiceType' => $payload['invoiceType'],
@@ -37,8 +33,6 @@ class TaxCoreSaleService
             $taxCorePayload['referentDocumentDT'] = $payload['referentDocumentDT'];
         }
 
-        $response = $this->apiService->post($connection, '/api/v3/invoices', $taxCorePayload);
-
-        return $response->json();
+        return $taxCorePayload;
     }
 }

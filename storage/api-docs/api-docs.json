@@ -16,6 +16,440 @@
         }
     ],
     "paths": {
+        "/api/agent/token": {
+            "post": {
+                "tags": [
+                    "Agent"
+                ],
+                "summary": "Create an agent token for an organization",
+                "description": "Generates a one-time-visible Bearer token that the nexo-agent daemon uses to authenticate. Store it immediately — it cannot be recovered.",
+                "operationId": "agentCreateToken",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "organization_id"
+                                ],
+                                "properties": {
+                                    "organization_id": {
+                                        "description": "ID of the organization the agent will represent.",
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "name": {
+                                        "description": "Optional label to identify this token (max 100 chars).",
+                                        "type": "string",
+                                        "example": "nexo-agent-laptop"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Token created. Copy the token value — it will not be shown again.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Agent token created"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "token": {
+                                                    "description": "Plain-text token. Pass as Bearer in Authorization header. Only shown once.",
+                                                    "type": "string",
+                                                    "example": "a1b2c3d4e5f6..."
+                                                },
+                                                "agent_token_id": {
+                                                    "description": "Internal ID of the created token record.",
+                                                    "type": "integer",
+                                                    "example": 1
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error — organization_id missing or not found."
+                    }
+                }
+            }
+        },
+        "/api/agent/config": {
+            "get": {
+                "tags": [
+                    "Agent"
+                ],
+                "summary": "Fetch Reverb connection parameters",
+                "description": "Called by the daemon at startup to get the WebSocket server details. This way the agent only needs the nexo_url and its token — no infrastructure details need to be distributed manually.",
+                "operationId": "agentConfig",
+                "responses": {
+                    "200": {
+                        "description": "Reverb connection parameters.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "OK"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "reverb_app_key": {
+                                                    "type": "string",
+                                                    "example": "drt0nv5lmajiwoj2a58h"
+                                                },
+                                                "reverb_host": {
+                                                    "type": "string",
+                                                    "example": "localhost"
+                                                },
+                                                "reverb_port": {
+                                                    "type": "integer",
+                                                    "example": 8080
+                                                },
+                                                "reverb_scheme": {
+                                                    "type": "string",
+                                                    "example": "http"
+                                                },
+                                                "organization_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid agent token."
+                    }
+                },
+                "security": [
+                    {
+                        "agentToken": []
+                    }
+                ]
+            }
+        },
+        "/api/agent/ping": {
+            "post": {
+                "tags": [
+                    "Agent"
+                ],
+                "summary": "Heartbeat — marks the agent as online",
+                "description": "The daemon calls this every 15 seconds. The server uses the last_seen_at timestamp to decide whether to push tasks via WebSocket or queue them as pending_fiscal.",
+                "operationId": "agentPing",
+                "responses": {
+                    "200": {
+                        "description": "Pong — last_seen_at updated.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "pong"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {},
+                                            "example": []
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid or expired agent token."
+                    }
+                },
+                "security": [
+                    {
+                        "agentToken": []
+                    }
+                ]
+            }
+        },
+        "/api/agent/pending": {
+            "get": {
+                "tags": [
+                    "Agent"
+                ],
+                "summary": "Reconciliation — get pending fiscal tasks",
+                "description": "Called by the agent immediately after reconnecting to Reverb. Returns all sales with status=pending_fiscal for this organization, with their TaxCore-formatted payloads ready to send to V-SDC.",
+                "operationId": "agentPending",
+                "responses": {
+                    "200": {
+                        "description": "List of pending fiscalization tasks.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Pending fiscal tasks"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "task_id": {
+                                                        "type": "string",
+                                                        "format": "uuid",
+                                                        "example": "550e8400-e29b-41d4-a716-446655440000"
+                                                    },
+                                                    "sale_id": {
+                                                        "type": "integer",
+                                                        "example": 42
+                                                    },
+                                                    "method": {
+                                                        "type": "string",
+                                                        "example": "POST"
+                                                    },
+                                                    "endpoint": {
+                                                        "type": "string",
+                                                        "example": "/api/v3/invoices"
+                                                    },
+                                                    "payload": {
+                                                        "description": "TaxCore-formatted invoice payload ready to send to V-SDC.",
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid or expired agent token."
+                    }
+                },
+                "security": [
+                    {
+                        "agentToken": []
+                    }
+                ]
+            }
+        },
+        "/api/agent/result": {
+            "post": {
+                "tags": [
+                    "Agent"
+                ],
+                "summary": "Report a fiscalization result",
+                "description": "After the agent calls V-SDC and gets a response (or an error), it POSTs the result here. The server marks the sale as completed or failed accordingly. Idempotent: if the sale is already completed, the request is ignored.",
+                "operationId": "agentResult",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "sale_id",
+                                    "task_id",
+                                    "ok"
+                                ],
+                                "properties": {
+                                    "sale_id": {
+                                        "description": "ID of the sale being fiscalized.",
+                                        "type": "integer",
+                                        "example": 42
+                                    },
+                                    "task_id": {
+                                        "description": "Task UUID from the original fiscalization.requested event.",
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "example": "550e8400-e29b-41d4-a716-446655440000"
+                                    },
+                                    "ok": {
+                                        "description": "true if V-SDC returned a successful response, false on error.",
+                                        "type": "boolean",
+                                        "example": true
+                                    },
+                                    "fiscal_number": {
+                                        "description": "invoiceNumber from V-SDC response. Required when ok=true.",
+                                        "type": "string",
+                                        "example": "CPLP77KX-Dt1Ov1o0-5",
+                                        "nullable": true
+                                    },
+                                    "fiscal_result": {
+                                        "description": "Full JSON body returned by V-SDC. Stored as-is for audit.",
+                                        "type": "object",
+                                        "nullable": true
+                                    },
+                                    "error": {
+                                        "description": "Error message. Required when ok=false.",
+                                        "type": "string",
+                                        "example": "V-SDC returned HTTP 400",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Result recorded. Sale status updated.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Result recorded"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {},
+                                            "example": []
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid or expired agent token."
+                    },
+                    "403": {
+                        "description": "The sale does not belong to the agent's organization."
+                    },
+                    "422": {
+                        "description": "Validation error."
+                    }
+                },
+                "security": [
+                    {
+                        "agentToken": []
+                    }
+                ]
+            }
+        },
+        "/api/agent/broadcasting-auth": {
+            "post": {
+                "tags": [
+                    "Agent"
+                ],
+                "summary": "Authenticate Reverb private channel",
+                "description": "Called by the nexo-agent daemon after connecting to the Reverb WebSocket. Validates the agent token and returns a Pusher HMAC signature so the daemon can subscribe to private-agent.{org_id}.",
+                "operationId": "agentBroadcastingAuth",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "required": [
+                                    "socket_id",
+                                    "channel_name"
+                                ],
+                                "properties": {
+                                    "socket_id": {
+                                        "description": "Socket ID provided by Reverb in the pusher:connection_established event.",
+                                        "type": "string",
+                                        "example": "123.456"
+                                    },
+                                    "channel_name": {
+                                        "description": "Must be private-agent.{organization_id} matching the token's org.",
+                                        "type": "string",
+                                        "example": "private-agent.1"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Auth signature generated. Use the auth value in pusher:subscribe.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "OK"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "auth": {
+                                                    "description": "Pusher auth string: appKey:HMAC-SHA256(socketId:channel).",
+                                                    "type": "string",
+                                                    "example": "nexo-local-key:a1b2c3d4..."
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid agent token."
+                    },
+                    "403": {
+                        "description": "channel_name does not match this token's organization."
+                    }
+                },
+                "security": [
+                    {
+                        "agentToken": []
+                    }
+                ]
+            }
+        },
         "/api/connectors": {
             "get": {
                 "tags": [
@@ -1073,49 +1507,29 @@
                 ]
             }
         },
-        "/api/integrations/taxcore/connect": {
+        "/api/integrations/taxcore/connect-agent": {
             "post": {
                 "tags": [
                     "TaxCore Integration"
                 ],
-                "summary": "Register a TaxCore connection for an organization",
-                "description": "Uploads a PFX/P12 certificate and registers the TaxCore V-SDC connection for an organization. The certificate must contain OID 1.3.6.1.4.1.58220.2.7 (V-SDC URL). Only one active connection per organization is allowed.",
-                "operationId": "taxcoreConnect",
+                "summary": "Register a TaxCore connection in agent mode",
+                "description": "Creates a TaxCore connection record without storing the certificate or PAC on the server. The nexo-agent daemon holds them securely in the OS keychain (DPAPI on Windows) and calls V-SDC directly via mTLS.",
+                "operationId": "taxcoreConnectAgent",
                 "requestBody": {
                     "required": true,
                     "content": {
-                        "multipart/form-data": {
+                        "application/json": {
                             "schema": {
                                 "required": [
                                     "organization_id",
-                                    "certificate",
-                                    "password",
-                                    "pac",
                                     "environment"
                                 ],
                                 "properties": {
                                     "organization_id": {
-                                        "description": "ID of the organization to register the connection for.",
                                         "type": "integer",
                                         "example": 1
                                     },
-                                    "certificate": {
-                                        "description": "PFX or P12 certificate file issued by TaxCore.",
-                                        "type": "string",
-                                        "format": "binary"
-                                    },
-                                    "password": {
-                                        "description": "Password to decrypt the PFX certificate.",
-                                        "type": "string",
-                                        "example": "WKURRSGU"
-                                    },
-                                    "pac": {
-                                        "description": "PAC (POS Authentication Code) included in the certificate.",
-                                        "type": "string",
-                                        "example": "4YHBDH"
-                                    },
                                     "environment": {
-                                        "description": "Target environment.",
                                         "type": "string",
                                         "example": "sandbox",
                                         "enum": [
@@ -1131,7 +1545,7 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Connection registered successfully.",
+                        "description": "Agent connection registered.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1142,22 +1556,17 @@
                                         },
                                         "message": {
                                             "type": "string",
-                                            "example": "Connected to TaxCore successfully."
+                                            "example": "TaxCore agent connection registered."
                                         },
                                         "data": {
                                             "properties": {
                                                 "id": {
-                                                    "description": "Internal connection ID.",
                                                     "type": "integer",
                                                     "example": 1
                                                 },
                                                 "environment": {
                                                     "type": "string",
                                                     "example": "sandbox"
-                                                },
-                                                "vsdc_url": {
-                                                    "type": "string",
-                                                    "example": "https://vsdc.sandbox.taxcore.online"
                                                 },
                                                 "active": {
                                                     "type": "boolean",
@@ -1173,494 +1582,7 @@
                         }
                     },
                     "422": {
-                        "description": "Validation error — missing or invalid fields."
-                    },
-                    "409": {
-                        "description": "Business conflict — certificate expired, invalid, or connection already exists."
-                    }
-                }
-            }
-        },
-        "/api/integrations/taxcore/status": {
-            "get": {
-                "tags": [
-                    "TaxCore Integration"
-                ],
-                "summary": "Check V-SDC status for an organization",
-                "description": "Queries the V-SDC status endpoint using the active TaxCore connection for the given organization. Returns SDC date/time, UID, supported languages and tax rates.",
-                "operationId": "taxcoreStatus",
-                "parameters": [
-                    {
-                        "name": "organization_id",
-                        "in": "query",
-                        "description": "ID of the organization whose active TaxCore connection will be used.",
-                        "required": true,
-                        "schema": {
-                            "type": "integer",
-                            "example": 1
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "V-SDC status retrieved successfully.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "TaxCore connection is active."
-                                        },
-                                        "data": {
-                                            "properties": {
-                                                "sdcDateTime": {
-                                                    "type": "string",
-                                                    "format": "date-time",
-                                                    "example": "2026-05-27T22:10:00+02:00"
-                                                },
-                                                "uid": {
-                                                    "type": "string",
-                                                    "example": "Dt1Ov1o0"
-                                                },
-                                                "taxCoreApi": {
-                                                    "type": "string",
-                                                    "example": "https://api.sandbox.taxcore.online"
-                                                },
-                                                "supportedLanguages": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "type": "string",
-                                                        "example": "en"
-                                                    }
-                                                },
-                                                "taxRates": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "properties": {
-                                                            "label": {
-                                                                "type": "string",
-                                                                "example": "A"
-                                                            },
-                                                            "rate": {
-                                                                "type": "number",
-                                                                "example": 9
-                                                            },
-                                                            "categoryName": {
-                                                                "type": "string",
-                                                                "example": "VAT"
-                                                            },
-                                                            "categoryType": {
-                                                                "type": "integer",
-                                                                "example": 0
-                                                            }
-                                                        },
-                                                        "type": "object"
-                                                    }
-                                                }
-                                            },
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "No active TaxCore connection found for the organization."
-                    },
-                    "422": {
-                        "description": "Validation error — organization_id missing or invalid."
-                    }
-                }
-            }
-        },
-        "/api/integrations/taxcore/environment-parameters": {
-            "get": {
-                "tags": [
-                    "TaxCore Integration"
-                ],
-                "summary": "Get V-SDC environment parameters for an organization",
-                "description": "Returns fiscal environment parameters from the V-SDC: organization name, TIN, timezone, city, and relevant API endpoints.",
-                "operationId": "taxcoreEnvironmentParameters",
-                "parameters": [
-                    {
-                        "name": "organization_id",
-                        "in": "query",
-                        "description": "ID of the organization whose active TaxCore connection will be used.",
-                        "required": true,
-                        "schema": {
-                            "type": "integer",
-                            "example": 1
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Environment parameters retrieved successfully.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Environment parameters retrieved."
-                                        },
-                                        "data": {
-                                            "properties": {
-                                                "organizationName": {
-                                                    "type": "string",
-                                                    "example": "Worth It Ltd"
-                                                },
-                                                "tin": {
-                                                    "type": "string",
-                                                    "example": "718587"
-                                                },
-                                                "locationName": {
-                                                    "type": "string",
-                                                    "example": "Worth It Ltd"
-                                                },
-                                                "address": {
-                                                    "type": "string",
-                                                    "example": "Joint Court"
-                                                },
-                                                "city": {
-                                                    "type": "string",
-                                                    "example": "Beograd"
-                                                },
-                                                "timeZone": {
-                                                    "type": "string",
-                                                    "example": "Europe/Belgrade"
-                                                }
-                                            },
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "No active TaxCore connection found for the organization."
-                    },
-                    "422": {
-                        "description": "Validation error — organization_id missing or invalid."
-                    }
-                }
-            }
-        },
-        "/api/integrations/taxcore/invoices": {
-            "post": {
-                "tags": [
-                    "TaxCore Integration"
-                ],
-                "summary": "Sign and fiscalize an invoice",
-                "description": "Sends an invoice to the V-SDC for fiscal signing. The active TaxCore connection for the given organization is used automatically. Supports all invoice types (Normal, ProForma, Copy, Training, Advance) and transaction types (Sale, Refund). To cancel/reverse a previously signed invoice, send invoiceType=0 + transactionType=1 + referentDocumentNumber pointing to the original invoiceNumber.",
-                "operationId": "taxcoreSignInvoice",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "required": [
-                                    "organization_id",
-                                    "invoiceType",
-                                    "transactionType",
-                                    "items",
-                                    "payment"
-                                ],
-                                "properties": {
-                                    "organization_id": {
-                                        "description": "ID of the organization whose active TaxCore connection will be used.",
-                                        "type": "integer",
-                                        "example": 1
-                                    },
-                                    "invoiceType": {
-                                        "description": "0=Normal, 1=ProForma, 2=Copy, 3=Training, 4=Advance.",
-                                        "type": "integer",
-                                        "example": 0,
-                                        "enum": [
-                                            0,
-                                            1,
-                                            2,
-                                            3,
-                                            4
-                                        ]
-                                    },
-                                    "transactionType": {
-                                        "description": "0=Sale, 1=Refund.",
-                                        "type": "integer",
-                                        "example": 0,
-                                        "enum": [
-                                            0,
-                                            1
-                                        ]
-                                    },
-                                    "dateAndTimeOfIssue": {
-                                        "description": "Issue date/time. Defaults to current time if omitted.",
-                                        "type": "string",
-                                        "format": "date-time",
-                                        "example": "2026-05-27T22:00:00+02:00",
-                                        "nullable": true
-                                    },
-                                    "cashier": {
-                                        "type": "string",
-                                        "example": "Juan Pérez",
-                                        "nullable": true,
-                                        "maxLength": 50
-                                    },
-                                    "buyerId": {
-                                        "type": "string",
-                                        "example": "12345678",
-                                        "nullable": true,
-                                        "maxLength": 20
-                                    },
-                                    "buyerCostCenterId": {
-                                        "type": "string",
-                                        "example": "CC-001",
-                                        "nullable": true,
-                                        "maxLength": 50
-                                    },
-                                    "invoiceNumber": {
-                                        "description": "Optional internal invoice number.",
-                                        "type": "string",
-                                        "example": "2026/001",
-                                        "nullable": true,
-                                        "maxLength": 60
-                                    },
-                                    "referentDocumentNumber": {
-                                        "description": "Required for Refund (transactionType=1), Copy (invoiceType=2), and Advance-linked invoices (invoiceType=4). Must match the invoiceNumber returned by the original signed invoice.",
-                                        "type": "string",
-                                        "example": "CPLP77KX-Dt1Ov1o0-1",
-                                        "nullable": true,
-                                        "maxLength": 50
-                                    },
-                                    "referentDocumentDT": {
-                                        "description": "Issue date/time of the referent document.",
-                                        "type": "string",
-                                        "example": "2026-05-27T22:00:00+02:00",
-                                        "nullable": true
-                                    },
-                                    "items": {
-                                        "type": "array",
-                                        "items": {
-                                            "required": [
-                                                "name",
-                                                "quantity",
-                                                "unitPrice",
-                                                "totalAmount",
-                                                "labels"
-                                            ],
-                                            "properties": {
-                                                "name": {
-                                                    "type": "string",
-                                                    "example": "Producto A"
-                                                },
-                                                "quantity": {
-                                                    "type": "number",
-                                                    "format": "float",
-                                                    "example": 2
-                                                },
-                                                "unitPrice": {
-                                                    "type": "number",
-                                                    "format": "float",
-                                                    "example": 50
-                                                },
-                                                "totalAmount": {
-                                                    "type": "number",
-                                                    "format": "float",
-                                                    "example": 100
-                                                },
-                                                "labels": {
-                                                    "description": "Tax category labels (e.g. A=VAT 9%).",
-                                                    "type": "array",
-                                                    "items": {
-                                                        "type": "string",
-                                                        "example": "A"
-                                                    },
-                                                    "minItems": 1
-                                                },
-                                                "gtin": {
-                                                    "description": "Optional barcode / GTIN.",
-                                                    "type": "string",
-                                                    "example": "01234567890128",
-                                                    "nullable": true,
-                                                    "maxLength": 14,
-                                                    "minLength": 8
-                                                }
-                                            },
-                                            "type": "object"
-                                        },
-                                        "minItems": 1
-                                    },
-                                    "payment": {
-                                        "type": "array",
-                                        "items": {
-                                            "required": [
-                                                "amount",
-                                                "paymentType"
-                                            ],
-                                            "properties": {
-                                                "amount": {
-                                                    "type": "number",
-                                                    "format": "float",
-                                                    "example": 100
-                                                },
-                                                "paymentType": {
-                                                    "description": "0=Other, 1=Cash, 2=Card, 3=Check, 4=WireTransfer, 5=Voucher, 6=MobileMoney.",
-                                                    "type": "integer",
-                                                    "example": 1,
-                                                    "enum": [
-                                                        0,
-                                                        1,
-                                                        2,
-                                                        3,
-                                                        4,
-                                                        5,
-                                                        6
-                                                    ]
-                                                }
-                                            },
-                                            "type": "object"
-                                        },
-                                        "minItems": 1
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Invoice signed and fiscalized successfully.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Invoice signed successfully."
-                                        },
-                                        "data": {
-                                            "properties": {
-                                                "invoiceNumber": {
-                                                    "description": "Signed invoice number. Use as referentDocumentNumber for future Refund/Copy.",
-                                                    "type": "string",
-                                                    "example": "CPLP77KX-Dt1Ov1o0-5"
-                                                },
-                                                "requestedBy": {
-                                                    "type": "string",
-                                                    "example": "CPLP77KX"
-                                                },
-                                                "signedBy": {
-                                                    "type": "string",
-                                                    "example": "Dt1Ov1o0"
-                                                },
-                                                "sdcDateTime": {
-                                                    "type": "string",
-                                                    "format": "date-time",
-                                                    "example": "2026-05-27T22:17:41+02:00"
-                                                },
-                                                "invoiceCounter": {
-                                                    "type": "string",
-                                                    "example": "5/5N"
-                                                },
-                                                "totalAmount": {
-                                                    "type": "number",
-                                                    "example": 100
-                                                },
-                                                "verificationUrl": {
-                                                    "type": "string",
-                                                    "example": "https://sandbox.taxcore.online/v/?vl=..."
-                                                },
-                                                "verificationQRCode": {
-                                                    "description": "Base64-encoded QR code image (GIF).",
-                                                    "type": "string"
-                                                },
-                                                "journal": {
-                                                    "description": "Printable ticket text.",
-                                                    "type": "string"
-                                                },
-                                                "signature": {
-                                                    "description": "Digital signature of the invoice.",
-                                                    "type": "string"
-                                                },
-                                                "businessName": {
-                                                    "type": "string",
-                                                    "example": "Worth It Ltd"
-                                                },
-                                                "tin": {
-                                                    "type": "string",
-                                                    "example": "718587"
-                                                },
-                                                "locationName": {
-                                                    "type": "string",
-                                                    "example": "Worth It Ltd"
-                                                },
-                                                "address": {
-                                                    "type": "string",
-                                                    "example": "Joint Court"
-                                                },
-                                                "taxItems": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "properties": {
-                                                            "label": {
-                                                                "type": "string",
-                                                                "example": "A"
-                                                            },
-                                                            "categoryName": {
-                                                                "type": "string",
-                                                                "example": "VAT"
-                                                            },
-                                                            "rate": {
-                                                                "type": "number",
-                                                                "example": 9
-                                                            },
-                                                            "amount": {
-                                                                "type": "number",
-                                                                "example": 8.26
-                                                            },
-                                                            "categoryType": {
-                                                                "type": "integer",
-                                                                "example": 0
-                                                            }
-                                                        },
-                                                        "type": "object"
-                                                    }
-                                                }
-                                            },
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "No active TaxCore connection found for the organization."
-                    },
-                    "409": {
-                        "description": "V-SDC rejected the invoice — check items, labels or referentDocumentNumber."
-                    },
-                    "422": {
-                        "description": "Validation error — missing or invalid fields."
+                        "description": "Validation error."
                     }
                 }
             }
@@ -3131,6 +3053,11 @@
     },
     "components": {
         "securitySchemes": {
+            "agentToken": {
+                "type": "http",
+                "description": "Bearer token issued by POST /api/agent/token. Used by the nexo-agent daemon to authenticate all agent endpoints.",
+                "scheme": "bearer"
+            },
             "connectorToken": {
                 "type": "http",
                 "description": "Bearer token issued when a Connector is created. Only visible at creation time.",
@@ -3139,6 +3066,10 @@
         }
     },
     "tags": [
+        {
+            "name": "Agent",
+            "description": "Endpoints for the nexo-agent desktop daemon. The daemon connects via WebSocket (Reverb) and receives fiscalization tasks pushed by the server."
+        },
         {
             "name": "Connectors",
             "description": "Endpoints for managing connectors. A connector represents an external system integration point linked to an organization."
@@ -3149,7 +3080,7 @@
         },
         {
             "name": "TaxCore Integration",
-            "description": "Endpoints for managing TaxCore fiscal integration. Requires an active TaxCore connection for the organization (registered via /connect)."
+            "description": "Endpoints for managing the TaxCore fiscal integration. The nexo-agent daemon holds the certificate and PAC on the client machine and calls V-SDC directly."
         },
         {
             "name": "Xero Integration",

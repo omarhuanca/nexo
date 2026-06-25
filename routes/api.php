@@ -8,6 +8,7 @@ use App\Modules\Integration\Xero\Controller\XeroController;
 use App\Modules\Integration\Xero\Controller\XeroItemController;
 use App\Modules\IntegrationEvent\Controller\IntegrationEventController;
 use App\Modules\Sale\Controller\SaleController;
+use App\Modules\Agent\Controller\AgentController;
 use App\Modules\Integration\TaxCore\Controller\TaxCoreController;
 
 // ORGANIZATIONS ROUTES
@@ -44,11 +45,19 @@ Route::get('/integrations/xero/{connectionId}/contacts', [XeroController::class,
 
 // TAXCORE ROUTES
 
-Route::post('/integrations/taxcore/connect', [TaxCoreController::class, 'connect']);
-Route::get('/integrations/taxcore/status', [TaxCoreController::class, 'status']);
-Route::get('/integrations/taxcore/environment-parameters',  [TaxCoreController::class, 'environmentParameters']);
-Route::post('/integrations/taxcore/invoices', [TaxCoreController::class, 'signInvoice']);
+Route::post('/integrations/taxcore/connect-agent', [TaxCoreController::class, 'connectAgent']);
 
+
+// AGENT ROUTES
+
+Route::post('/agent/token', [AgentController::class, 'createToken']);
+
+Route::middleware('agent.auth')->group(function () {
+    Route::get('/agent/config',             [AgentController::class, 'config']);
+    Route::get('/agent/pending',            [AgentController::class, 'pending']);
+    Route::post('/agent/result',            [AgentController::class, 'result']);
+    Route::post('/agent/broadcasting-auth', [AgentController::class, 'broadcastingAuth']);
+});
 
 // WEBHOOK RECEIVER
 
