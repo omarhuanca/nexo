@@ -2,6 +2,8 @@
 
 Integration middleware that connects POS/ERP systems to **Xero** (accounting) and **TaxCore** (fiscal compliance). Exposes a REST API that external connectors use to sync product catalogs and register sales, bridging the data to both platforms in real time.
 
+Fiscal signing with TaxCore is delegated to **nexo-agent**, a companion daemon that runs next to the POS and holds the TaxCore certificate locally. The server pushes fiscalization tasks to it over a Reverb WebSocket and never touches the certificate itself.
+
 ---
 
 ## Table of Contents
@@ -12,13 +14,14 @@ Integration middleware that connects POS/ERP systems to **Xero** (accounting) an
 4. [Environment Variables](#environment-variables)
 5. [Xero Configuration](#xero-configuration)
 6. [TaxCore Configuration](#taxcore-configuration)
-7. [Database Setup](#database-setup)
-8. [Running the Project](#running-the-project)
-9. [Queue Workers](#queue-workers)
-10. [Swagger Documentation](#swagger-documentation)
-11. [Architecture](#architecture)
-12. [API Overview](#api-overview)
-13. [Deployment Checklist](#deployment-checklist)
+7. [Nexo Agent (Fiscalization Daemon)](#nexo-agent-fiscalization-daemon)
+8. [Database Setup](#database-setup)
+9. [Running the Project](#running-the-project)
+10. [Queue Workers](#queue-workers)
+11. [Swagger Documentation](#swagger-documentation)
+12. [Architecture](#architecture)
+13. [API Overview](#api-overview)
+14. [Deployment Checklist](#deployment-checklist)
 
 ---
 
@@ -26,12 +29,14 @@ Integration middleware that connects POS/ERP systems to **Xero** (accounting) an
 
 | Layer | Technology |
 |---|---|
-| Framework | Laravel 13.8 / PHP 8.4+ |
+| Framework | Laravel 13.8 / PHP 8.3+ |
 | Database | PostgreSQL |
 | Queue | Laravel Database Queue (Redis-ready) |
+| Realtime | Laravel Reverb (WebSocket, Pusher protocol) |
 | Auth (connectors) | Bearer token per Connector |
 | Auth (Xero) | OAuth 2.0 — `league/oauth2-client` |
-| Auth (TaxCore) | mTLS — PFX/P12 certificate + PAC header |
+| Auth (TaxCore) | mTLS handled by the nexo-agent daemon (PFX/P12 certificate + PAC), not by the server |
+| Auth (Agent) | Bearer token per organization (`agent_tokens` table) |
 | API Docs | l5-swagger (OpenAPI 3.0) |
 
 ---
@@ -39,10 +44,9 @@ Integration middleware that connects POS/ERP systems to **Xero** (accounting) an
 ## Prerequisites
 
 - PHP 8.3+ with extensions: `pdo_pgsql`, `openssl`, `curl`, `json`, `mbstring`
-- OpenSSL CLI accessible at `openssl` in `PATH` (required for legacy PFX parsing)
 - PostgreSQL 14+
 - Composer 2
-- Node.js / npm (only for Vite asset compilation if needed)
+- Node.js / npm (Vite assets, and to run `php artisan reverb:start` alongside the app in `composer dev`)
 
 ---
 
@@ -74,7 +78,7 @@ APP_DEBUG=false
 APP_URL=https://your-domain.com
 ```
 
-> **Important:** `APP_KEY` is used to encrypt TaxCore certificates and passwords stored in the database. If this key changes, all stored TaxCore connections become unreadable. Back it up and never rotate it without a migration plan.
+> **Important:** `APP_KEY` is used by Laravel's encrypter across the app (e.g. Xero token storage). Back it up and never rotate it without a migration plan.
 
 ### Database
 
@@ -109,6 +113,27 @@ XERO_CLIENT_ID=your_xero_client_id
 XERO_CLIENT_SECRET=your_xero_client_secret
 XERO_REDIRECT_URI=https://your-domain.com/api/integrations/xero/callback
 XERO_SCOPES="openid email profile offline_access accounting.settings accounting.transactions accounting.contacts"
+XERO_WEBHOOK_KEY=your_xero_webhook_signing_key   # from the Xero app's Webhooks tab, used to verify x-xero-signature
+```
+
+### Reverb (Realtime — used by the Agent)
+
+```env
+BROADCAST_CONNECTION=reverb
+
+# Shared between the server and every nexo-agent daemon
+REVERB_APP_ID=your_reverb_app_id
+REVERB_APP_KEY=your_reverb_app_key
+REVERB_APP_SECRET=your_reverb_app_secret
+
+# Public address — what agents connect to (behind Nginx/SSL in production)
+REVERB_HOST=your-domain.com
+REVERB_PORT=443
+REVERB_SCHEME=https
+
+# Internal address — where the Reverb server process actually listens
+REVERB_SERVER_HOST=127.0.0.1
+REVERB_SERVER_PORT=8080
 ```
 
 ### Swagger
@@ -146,40 +171,63 @@ These are the minimum required for creating Invoices and syncing Items. Do not r
 
 The access token is automatically refreshed when it expires (handled by `XeroApiService::refreshIfNeeded()`).
 
+### 4. Webhooks
+
+`POST /api/integrations/xero/webhook` receives Xero webhook notifications (no auth middleware — validated by signature instead).
+
+- The request must carry an `x-xero-signature` header: `base64(HMAC-SHA256(raw_body, XERO_WEBHOOK_KEY))`. Requests that fail validation are rejected with `401`.
+- For each event in the payload, the server fetches the current `Invoice` or `Contact` from Xero and logs it (`XeroWebhookService::getData()`). Extend this to react to Xero-side changes as needed.
+
 ---
 
 ## TaxCore Configuration
 
-TaxCore uses **mutual TLS (mTLS)** authentication. Each organization needs a **PFX/P12 certificate** issued by TaxCore.
+TaxCore fiscalization now runs through the **nexo-agent** daemon (see [Nexo Agent](#nexo-agent-fiscalization-daemon)) — the server itself no longer stores or handles the PFX/P12 certificate. The old certificate-upload flow (`POST /api/integrations/taxcore/connect`, `EncryptionService`-encrypted cert columns) has been removed from the `taxcore_connections` table.
 
-### 1. Register a Connection
+### Register a TaxCore Connection
 
-`POST /api/integrations/taxcore/connect` (multipart/form-data):
+`POST /api/integrations/taxcore/connect-agent` (JSON):
 
 | Field | Description |
 |---|---|
 | `organization_id` | Internal organization ID |
-| `certificate` | PFX or P12 file issued by TaxCore |
-| `password` | Certificate password |
-| `pac` | PAC (POS Authentication Code) from the certificate |
 | `environment` | `sandbox` or `production` |
 
-The certificate and password are **encrypted** with `APP_KEY` before being stored in the database (using Laravel's `Crypt` facade via `EncryptionService`).
+This just records which V-SDC environment the organization's agent should target; the certificate, password, and PAC live only on the machine running nexo-agent.
 
-### 2. CA Bundle
+---
 
-TaxCore's V-SDC endpoints require a specific CA chain for TLS verification. Place the CA bundle files in:
+## Nexo Agent (Fiscalization Daemon)
 
-```
-storage/certs/taxcore_sandbox_ca_bundle.pem
-storage/certs/taxcore_production_ca_bundle.pem
-```
+**nexo-agent** is a separate daemon (not in this repo) that runs on-premise next to the POS, holds the TaxCore certificate, and signs invoices against V-SDC directly. The server only exchanges small JSON messages with it over a Reverb WebSocket — the certificate and password never leave the agent's machine.
 
-A fallback general CA bundle is already present at `storage/certs/cacert.pem`.
+### 1. Issue an Agent Token
 
-### 3. Legacy PFX Support
+`POST /api/agent/token`:
 
-If the certificate uses legacy PBE encryption (incompatible with OpenSSL 3+), the system automatically falls back to calling the `openssl` CLI with the `-legacy` flag. Ensure `openssl` is in `PATH` on the server.
+| Field | Description |
+|---|---|
+| `organization_id` | Internal organization ID |
+| `name` | Optional label (e.g. `nexo-agent-laptop`), defaults to `nexo-agent` |
+
+Returns a plain-text Bearer token, shown only once (only its SHA-256 hash is stored in `agent_tokens`). The daemon uses this token for every `/api/agent/*` call.
+
+### 2. Agent Endpoints (Bearer token required — `agent.auth` middleware)
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/agent/config` | Returns Reverb connection params (`reverb_app_key`, `reverb_host`, `reverb_port`, `reverb_scheme`, `organization_id`) so the daemon only needs the server URL + token |
+| GET | `/api/agent/pending` | Reconciliation — lists sales with `status=pending_fiscal` for the org, with V-SDC-ready payloads, for the agent to replay after a reconnect |
+| POST | `/api/agent/result` | Reports a fiscalization result (`sale_id`, `task_id`, `ok`, `fiscal_number`/`fiscal_result` or `error`). Idempotent once the sale is `completed` |
+| POST | `/api/agent/broadcasting-auth` | Authenticates the agent's private Reverb channel subscription (`private-agent.{organization_id}`), returning a Pusher-style HMAC auth signature |
+
+### 3. Flow
+
+1. `ProcessSaleJob` creates the Xero invoice, then builds the V-SDC payload and sets the sale to `pending_fiscal`
+2. It broadcasts a `fiscalization.requested` event on the private channel `agent.{organization_id}` (see `routes/channels.php`)
+3. The connected nexo-agent daemon receives it over Reverb, signs the invoice against V-SDC using its local certificate, and calls `POST /api/agent/result`
+4. The sale is marked `completed` (with `fiscal_number`/`fiscal_result`) or `failed` (with `error`)
+5. If the agent was offline when the task was broadcast, it calls `GET /api/agent/pending` on reconnect to catch up
 
 ---
 
@@ -209,6 +257,8 @@ php artisan db:seed
 | `create_xero_connections_table` | `xero_connections` |
 | `create_taxcore_connections_table` | `taxcore_connections` |
 | `create_sales_table` | `sales` |
+| `create_agent_tokens_table` | `agent_tokens` |
+| `drop_cert_columns_from_taxcore_connections` | `taxcore_connections` (removes the legacy PFX/password columns — certs now live only on the agent) |
 
 ---
 
@@ -217,8 +267,17 @@ php artisan db:seed
 ### Development
 
 ```bash
-php artisan serve          # API on http://localhost:8000
-php artisan queue:work --queue=sales,default   # process async sale jobs
+composer dev
+```
+
+Runs, concurrently: `php artisan serve` (API), `php artisan queue:listen --queue=sales,default` (jobs), `npm run dev` (Vite), and `php artisan reverb:start` (WebSocket server for the agent).
+
+Or run each piece manually:
+
+```bash
+php artisan serve                              # API on http://localhost:8000
+php artisan queue:work --queue=sales,default    # process async sale jobs
+php artisan reverb:start                        # WebSocket server the nexo-agent daemon connects to
 ```
 
 ### Production (with a process manager like Supervisor)
@@ -233,13 +292,48 @@ autorestart=true
 numprocs=2                 ; increase for higher concurrency
 user=www-data
 stdout_logfile=/var/log/nexo-worker.log
+
+# /etc/supervisor/conf.d/nexo-reverb.conf
+[program:nexo-reverb]
 ```
+
+### 1. Create the service file
+```
+sudo nano /etc/systemd/system/reverb.service
+
+[Unit]
+Description=Laravel Reverb WebSocket Server
+After=network.target
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+Restart=always
+RestartSec=3
+WorkingDirectory=/var/www/nexo
+ExecStart=/usr/bin/php /var/www/nexo/artisan reverb:start --host=127.0.0.1 --port=8080
+[Install]
+WantedBy=multi-user.target
+```
+
+### 2. Enable and start it
+```
+sudo systemctl daemon-reload
+sudo systemctl enable reverb
+sudo systemctl start reverb
+```
+
+3. Verify
+sudo systemctl status reverb
+sudo journaldctl -u reverb -f
 
 ```bash
 supervisorctl reread
 supervisorctl update
-supervisorctl start nexo-worker:*
+supervisorctl start nexo-worker:* nexo-reverb:*
 ```
+
+In production, put Reverb behind Nginx/SSL: `REVERB_SERVER_HOST`/`REVERB_SERVER_PORT` are where the process actually listens (e.g. `127.0.0.1:8080`), while `REVERB_HOST`/`REVERB_PORT`/`REVERB_SCHEME` are the public address agents connect to (e.g. `your-domain.com:443` over `wss://`).
 
 ---
 
@@ -252,10 +346,10 @@ The sale processing flow is **asynchronous**. When `POST /api/sales` is called:
 3. The API returns immediately with the sale `id` and `status: pending`
 4. The worker picks up the job and executes:
    - **Step 1 — Xero:** Creates an `ACCREC` Invoice in Xero
-   - **Step 2 — TaxCore:** Signs the fiscal invoice (only if Step 1 succeeded)
-5. Poll `GET /api/sales/{id}` for the result
+   - **Step 2 — TaxCore:** Builds the V-SDC payload, sets `status: pending_fiscal`, and broadcasts a `fiscalization.requested` event to the org's nexo-agent over Reverb (only if Step 1 succeeded)
+5. Poll `GET /api/sales/{id}` for the result — it moves to `completed`/`failed` once the agent calls back `POST /api/agent/result`
 
-**Retry behavior:** `tries=3`, backoff `[10s, 30s, 60s]`. If Xero fails on all retries, the sale is marked `failed` and TaxCore is never called. Each step is idempotent — if the job retries after Xero already succeeded, it skips directly to TaxCore.
+**Retry behavior:** `tries=3`, backoff `[10s, 30s, 60s]`. If Xero fails on all retries, the sale is marked `failed` and TaxCore is never invoked. The job is idempotent — if it retries after Xero already succeeded, it skips directly to the fiscalization step; once a sale reaches `pending_fiscal` or `completed`, `ProcessSaleJob` is a no-op (the rest of the flow is driven by the agent's callback, not by additional queue retries).
 
 **Monitoring failed jobs:**
 
@@ -292,7 +386,8 @@ http://localhost:8000/api/documentation
 ### Authentication in Swagger UI
 
 - For **connector endpoints** (`/api/sales`, `/api/integrations/products`, etc.): click **Authorize** → enter the connector's Bearer token
-- For **admin endpoints** (organizations, connectors, TaxCore connect, Xero connect): no auth required at the API level — protect with network/firewall rules in production
+- For **agent endpoints** (`/api/agent/*` except `/api/agent/token`): click **Authorize** → enter the agent's Bearer token (`agentToken` scheme)
+- For **admin endpoints** (organizations, connectors, TaxCore connect, Xero connect, agent token issuance): no auth required at the API level — protect with network/firewall rules in production
 
 ---
 
@@ -303,23 +398,31 @@ app/
 ├── Http/
 │   ├── Controllers/        Base controller
 │   ├── Middleware/
-│   │   └── ConnectorAuthenticationMiddleware   Bearer token auth for connectors
+│   │   ├── ConnectorAuthenticationMiddleware   Bearer token auth for connectors
+│   │   └── AgentAuthMiddleware                 Bearer token auth for the nexo-agent daemon
 │   ├── Requests/           FormRequest validation classes
 │   ├── Resources/          API response transformers
 │   └── Responses/
 │       └── ApiResponse     Standardized JSON response helper
 │
+├── Events/
+│   ├── FiscalizationRequested   Broadcast to the agent over Reverb (channel agent.{organizationId})
+│   ├── Sale/                    SaleSubmitted, SaleProcessingStarted, SaleCompleted, SaleFailed
+│   ├── Xero/                    XeroApiCall, XeroInvoiceCreated, XeroTokenRefreshed, XeroOAuthCallbackSuccess
+│   └── TaxCore/                 TaxCoreApiCall, TaxCoreCertUploaded, TaxCoreInvoiceSigned
+│
 ├── Jobs/
-│   └── ProcessSaleJob      Async: Xero Invoice → TaxCore fiscal signing
+│   └── ProcessSaleJob      Async: creates the Xero Invoice, then broadcasts a fiscalization task to the agent
 │
 ├── Modules/
+│   ├── Agent/              Agent token issuance/auth; serves Reverb config and pending tasks, receives results
 │   ├── Connector/          Connector management (tokens, allowed events)
 │   ├── Integration/
-│   │   ├── TaxCore/        TaxCore mTLS integration (cert, API, encryption)
-│   │   └── Xero/           Xero OAuth2 integration (items, invoices, contacts)
+│   │   ├── TaxCore/        TaxCore connection metadata (environment only — no cert/mTLS on the server)
+│   │   └── Xero/           Xero OAuth2 integration (items, invoices, contacts, webhooks)
 │   ├── IntegrationEvent/   Generic event ingestion from connectors
 │   ├── Organization/       Organization CRUD
-│   └── Sale/               Sale lifecycle (pending → processing → completed/failed)
+│   └── Sale/               Sale lifecycle (pending → processing → pending_fiscal → completed/failed)
 │
 └── Shared/
     ├── Domain/BaseEntity   Base Eloquent model
@@ -357,6 +460,25 @@ Controller reads $connector->getOrganizationId()
   → used to find active XeroConnection and TaxCoreConnection
 ```
 
+### Agent auth & broadcast flow
+
+```
+POST /api/agent/token  { organization_id }               (admin, no auth)
+  → returns plain-text token (only its SHA-256 hash is persisted)
+
+GET /api/agent/config, /pending   POST /result, /broadcasting-auth
+Authorization: Bearer {agent_token}
+        ↓
+AgentAuthMiddleware
+  → hashes token, looks up agent_tokens.token_hash, checks active
+  → injects $agentToken into $request->attributes
+        ↓
+ProcessSaleJob → broadcast(FiscalizationRequested) on private channel agent.{organization_id}
+        ↓
+nexo-agent daemon (subscribed via Reverb, authorized through /api/agent/broadcasting-auth)
+  → signs invoice with local TaxCore certificate → POST /api/agent/result
+```
+
 ---
 
 ## API Overview
@@ -367,40 +489,52 @@ Controller reads $connector->getOrganizationId()
 |---|---|---|
 | GET/POST/PUT/DELETE | `/api/organizations` | Organization CRUD |
 | GET/POST/PUT/DELETE | `/api/connectors` | Connector CRUD |
-| POST | `/api/integrations/taxcore/connect` | Register TaxCore cert |
-| GET | `/api/integrations/taxcore/status` | Check V-SDC status |
-| GET | `/api/integrations/taxcore/environment-parameters` | TaxCore env params |
-| GET | `/api/integrations/taxcore/invoices` | List fiscalized invoices (reads `sales` table) |
-| GET | `/api/integrations/taxcore/invoices/{id}` | Get a single fiscalized invoice with full payload + fiscal_result + xero_result |
+| POST | `/api/integrations/taxcore/connect-agent` | Register which V-SDC environment an organization's agent targets |
 | GET | `/api/integrations/xero/connect` | Start Xero OAuth2 flow |
 | GET | `/api/integrations/xero/callback` | Xero OAuth2 callback |
 | GET | `/api/integrations/xero/{id}/contacts` | List Xero contacts |
+| POST | `/api/agent/token` | Issue a Bearer token for an organization's nexo-agent daemon |
 
 ### Connector (Bearer token required)
 
 | Method | Endpoint | Description |
 |---|---|---|
 | POST | `/api/integrations/products` | Sync products → Xero Items (upsert by code) |
-| POST | `/api/sales` | Submit sale → async Xero Invoice + TaxCore fiscal signing |
+| POST | `/api/sales` | Submit sale → async Xero Invoice + agent-driven TaxCore fiscal signing |
 | GET | `/api/sales/{id}` | Poll sale status and retrieve fiscal result |
 | POST | `/api/integration-events` | Generic event ingestion |
+
+### Agent (Bearer agent token required)
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/agent/config` | Reverb connection parameters for the daemon |
+| GET | `/api/agent/pending` | Pending fiscalization tasks to (re)process |
+| POST | `/api/agent/result` | Report a fiscalization result for a sale |
+| POST | `/api/agent/broadcasting-auth` | Authorize the daemon's private Reverb channel subscription |
+
+### Webhook (signature-verified, no Bearer auth)
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/integrations/xero/webhook` | Receives Xero webhook notifications, verified via `x-xero-signature` |
 
 ---
 
 ## Deployment Checklist
 
 - [ ] PHP 8.3+ with `pdo_pgsql`, `openssl`, `curl` extensions enabled
-- [ ] `openssl` CLI in `PATH` (required for legacy PFX certificates)
-- [ ] `.env` configured — especially `APP_KEY`, `DB_*`, `XERO_*`
-- [ ] `APP_KEY` backed up securely — losing it makes all stored TaxCore credentials unrecoverable
+- [ ] `.env` configured — especially `APP_KEY`, `DB_*`, `XERO_*`, `REVERB_*`
+- [ ] `APP_KEY` backed up securely — rotating it invalidates encrypted data (e.g. stored Xero tokens)
 - [ ] `php artisan migrate` run on the production database
-- [ ] `storage/certs/taxcore_sandbox_ca_bundle.pem` and/or `taxcore_production_ca_bundle.pem` placed in server
 - [ ] `storage/` and `bootstrap/cache/` writable by the web server user
-- [ ] Xero app redirect URI set to `https://your-domain.com/api/integrations/xero/callback`
+- [ ] Xero app redirect URI set to `https://your-domain.com/api/integrations/xero/callback`, and `XERO_WEBHOOK_KEY` set from the Xero app's Webhooks tab
 - [ ] Queue worker running (Supervisor recommended) listening on `--queue=sales,default`
+- [ ] `reverb:start` running (Supervisor recommended) and reachable at `REVERB_HOST`/`REVERB_PORT` (proxy `wss://` through Nginx to `REVERB_SERVER_HOST`/`REVERB_SERVER_PORT`)
+- [ ] At least one nexo-agent daemon provisioned per organization with an active `/api/agent/token`, holding that org's TaxCore certificate
 - [ ] `L5_SWAGGER_GENERATE_ALWAYS=false` in production
 - [ ] `APP_DEBUG=false` in production
-- [ ] Admin endpoints (`/api/organizations`, `/api/connectors`, `/api/integrations/taxcore/connect`) protected at the network/firewall level — they have no authentication by design
+- [ ] Admin endpoints (`/api/organizations`, `/api/connectors`, `/api/integrations/taxcore/connect-agent`, `/api/agent/token`, Xero connect) protected at the network/firewall level — they have no authentication by design
 
 
 ## About Laravel
