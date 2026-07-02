@@ -293,12 +293,13 @@ numprocs=2                 ; increase for higher concurrency
 user=www-data
 stdout_logfile=/var/log/nexo-worker.log
 
-# /etc/supervisor/conf.d/nexo-reverb.conf
-[program:nexo-reverb]
 ```
 
 ### 1. Create the service file
-```
+```ini
+# /etc/supervisor/conf.d/nexo-reverb.conf
+[program:nexo-reverb]
+
 sudo nano /etc/systemd/system/reverb.service
 
 [Unit]
@@ -317,7 +318,7 @@ WantedBy=multi-user.target
 ```
 
 ### 2. Enable and start it
-```
+```bash
 sudo systemctl daemon-reload
 sudo systemctl enable reverb
 sudo systemctl start reverb
