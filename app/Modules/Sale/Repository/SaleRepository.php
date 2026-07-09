@@ -20,7 +20,21 @@ class SaleRepository extends AbstractRepository
         return $this->model->lockForUpdate()->find($id);
     }
 
-    public function findByIdForOrganization(int $id, ?int $organizationId = null): Sale
+    /**
+     * @return Sale[]
+     */
+    public function findPendingFiscalByOrganization(int $organizationId): array
+    {
+        return $this->model
+            ->where('organization_id', $organizationId)
+            ->where('status', 'pending_fiscal')
+            ->whereNull('fiscal_number')
+            ->orderBy('created_at')
+            ->get()
+            ->all();
+    }
+
+    public function findByIdForOrganization(int $id, int $organizationId): Sale
     {
         $query = $this->model->where('id', $id);
 

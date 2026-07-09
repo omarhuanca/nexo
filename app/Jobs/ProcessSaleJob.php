@@ -2,10 +2,9 @@
 
 namespace App\Jobs;
 
-use App\Events\Sale\SaleCompleted;
+use App\Events\FiscalizationRequested;
 use App\Events\Sale\SaleFailed;
 use App\Events\Sale\SaleProcessingStarted;
-use App\Modules\Integration\TaxCore\Service\TaxCoreConnectionService;
 use App\Modules\Integration\TaxCore\Service\TaxCoreSaleService;
 use App\Modules\Integration\Xero\Service\XeroConnectionService;
 use App\Modules\Integration\Xero\Service\XeroInvoiceSaleService;
@@ -15,6 +14,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -39,12 +39,11 @@ class ProcessSaleJob implements ShouldQueue
         SaleRepository $saleRepository,
         XeroConnectionService $xeroConnectionService,
         XeroInvoiceSaleService $xeroInvoiceSaleService,
-        TaxCoreConnectionService $taxCoreConnectionService,
         TaxCoreSaleService $taxCoreSaleService,
     ): void {
         $sale = $saleRepository->findByIdWithLock($this->saleId);
 
-        if (!$sale || $sale->getStatus() === 'completed') {
+        if (!$sale || in_array($sale->getStatus(), ['completed', 'pending_fiscal'])) {
             return;
         }
 
@@ -90,45 +89,29 @@ class ProcessSaleJob implements ShouldQueue
         }
 
         if ($sale->getFiscalNumber() === null) {
-            $taxCoreConnection = $taxCoreConnectionService->findActiveByOrganization($organizationId);
-            $fiscalResult      = $taxCoreSaleService->signInvoice($taxCoreConnection, $payload);
+            $vsdcPayload = $taxCoreSaleService->buildPayload($payload);
+            $taskId      = (string) Str::uuid();
 
-            $fiscalNumber = $fiscalResult['invoiceNumber'] ?? null;
-
-            $sale->setFiscalNumber($fiscalNumber);
-            $sale->setFiscalResult($fiscalResult);
+            $sale->setStatus('pending_fiscal');
             $saleRepository->save($sale);
 
-            if ($fiscalNumber) {
-                $durationMs = (int) (microtime(true) * 1000) - $this->startedAt;
-                event(new \App\Events\TaxCore\TaxCoreInvoiceSigned(
-                    $this->saleId,
-                    (string) $fiscalNumber,
-                    $durationMs,
+            try {
+                broadcast(new FiscalizationRequested(
+                    organizationId: $organizationId,
+                    taskId: $taskId,
+                    saleId: $sale->id,
+                    method: 'POST',
+                    endpoint: '/api/v3/invoices',
+                    payload: $vsdcPayload,
                 ));
+            } catch (Throwable $e) {
+                report($e);
             }
         }
-
-        $sale->setStatus('completed');
-        $sale->setProcessedAt(now());
-        $sale->setErrorMessage(null);
-        $saleRepository->save($sale);
-
-        $totalDuration = (int) (microtime(true) * 1000) - $this->startedAt;
-        event(new SaleCompleted(
-            $this->saleId,
-            $sale->getOrganizationId(),
-            $sale->getConnectorId(),
-            $sale->getXeroInvoiceId(),
-            $sale->getFiscalNumber(),
-            $totalDuration,
-        ));
     }
-
 
     public function failed(Throwable $exception): void
     {
-        /** @var SaleRepository $saleRepository */
         $saleRepository = app(SaleRepository::class);
         $sale = $saleRepository->findById($this->saleId);
 

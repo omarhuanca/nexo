@@ -1,25 +1,28 @@
 <?php
 
-namespace App\Modules\Integration\TaxCore\Domain;
+namespace App\Modules\Agent\Domain;
 
 use App\Modules\Organization\Domain\Organization;
 use App\Shared\Domain\BaseEntity;
 use App\Shared\Traits\GettersAndSetters;
 
-class TaxCoreConnection extends BaseEntity
+class AgentToken extends BaseEntity
 {
     use GettersAndSetters;
 
-    protected $table = 'taxcore_connections';
+    protected $table = 'agent_tokens';
 
     protected $fillable = [
         'organization_id',
-        'environment',
+        'token_hash',
+        'name',
+        'last_seen_at',
         'active',
     ];
 
     protected $casts = [
         'active' => 'boolean',
+        'last_seen_at' => 'datetime',
     ];
 
     public function organization()
