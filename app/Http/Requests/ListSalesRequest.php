@@ -14,7 +14,7 @@ class ListSalesRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'organization_id' => 'nullable|integer|exists:organizations,id',
+            'organization_id' => 'required|integer|exists:organizations,id',
             'status' => 'nullable|string|in:pending,processing,completed,failed',
             'invoiceType' => 'nullable|integer|in:0,1,2,3,4',
             'transactionType' => 'nullable|integer|in:0,1',

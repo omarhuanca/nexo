@@ -36,13 +36,10 @@ class SaleRepository extends AbstractRepository
 
     public function findByIdForOrganization(int $id, int $organizationId): Sale
     {
-        $query = $this->model->where('id', $id);
-
-        if ($organizationId !== null) {
-            $query->where('organization_id', $organizationId);
-        }
-
-        $sale = $query->first();
+        $sale = $this->model
+            ->where('id', $id)
+            ->where('organization_id', $organizationId)
+            ->first();
 
         if (! $sale) {
             throw new NotFoundException('Sale not found.');
@@ -51,13 +48,11 @@ class SaleRepository extends AbstractRepository
         return $sale;
     }
 
-    public function listForOrganization(?int $organizationId, ListSalesCriteria $criteria): LengthAwarePaginator
+    public function listForOrganization(int $organizationId, ListSalesCriteria $criteria): LengthAwarePaginator
     {
-        $query = $this->model->where('status', $criteria->status);
-
-        if ($organizationId !== null) {
-            $query->where('organization_id', $organizationId);
-        }
+        $query = $this->model
+            ->where('organization_id', $organizationId)
+            ->where('status', $criteria->status);
 
         if ($criteria->fiscalNumber !== null) {
             $query->where('fiscal_number', $criteria->fiscalNumber);

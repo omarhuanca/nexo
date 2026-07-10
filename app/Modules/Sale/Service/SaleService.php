@@ -37,17 +37,17 @@ class SaleService
         return $sale;
     }
 
-    public function getSaleById(int $id, ?int $organizationId = null): Sale
+    public function getSaleById(int $id, int $organizationId): Sale
     {
         return $this->saleRepository->findByIdForOrganization($id, $organizationId);
     }
 
-    public function listInvoices(?int $organizationId, ListSalesCriteria $criteria): LengthAwarePaginator
+    public function listInvoices(int $organizationId, ListSalesCriteria $criteria): LengthAwarePaginator
     {
         return $this->saleRepository->listForOrganization($organizationId, $criteria);
     }
 
-    public function getInvoice(int $id, ?int $organizationId = null): Sale
+    public function getInvoice(int $id, int $organizationId): Sale
     {
         return $this->getSaleById($id, $organizationId);
     }
