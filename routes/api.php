@@ -47,6 +47,9 @@ Route::get('/integrations/xero/{connectionId}/contacts', [XeroController::class,
 
 Route::post('/integrations/taxcore/connect-agent', [TaxCoreController::class, 'connectAgent']);
 
+Route::get('/integrations/taxcore/invoices', [SaleController::class, 'index']);
+Route::get('/integrations/taxcore/invoices/{id}', [SaleController::class, 'getInvoice']);
+
 
 // AGENT ROUTES
 

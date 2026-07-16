@@ -12,7 +12,7 @@
         },
         {
             "url": "https://nexo.test",
-            "description": "Herd Local Server"
+            "description": "Herd Local Server (HTTPS)"
         },
         {
             "url": "https://backendnexo.shop",
@@ -1586,621 +1586,7 @@
                         }
                     },
                     "422": {
-                        "description": "Validation error — missing or invalid fields."
-                    },
-                    "409": {
-                        "description": "Business conflict — certificate expired, invalid, or connection already exists."
-                    }
-                }
-            }
-        },
-        "/api/integrations/taxcore/status": {
-            "get": {
-                "tags": [
-                    "TaxCore Integration"
-                ],
-                "summary": "Check V-SDC status for an organization",
-                "description": "Queries the V-SDC status endpoint using the active TaxCore connection for the given organization. Returns SDC date/time, UID, supported languages and tax rates.",
-                "operationId": "taxcoreStatus",
-                "parameters": [
-                    {
-                        "name": "organization_id",
-                        "in": "query",
-                        "description": "ID of the organization whose active TaxCore connection will be used.",
-                        "required": true,
-                        "schema": {
-                            "type": "integer",
-                            "example": 1
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "V-SDC status retrieved successfully.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "TaxCore connection is active."
-                                        },
-                                        "data": {
-                                            "properties": {
-                                                "sdcDateTime": {
-                                                    "type": "string",
-                                                    "format": "date-time",
-                                                    "example": "2026-05-27T22:10:00+02:00"
-                                                },
-                                                "uid": {
-                                                    "type": "string",
-                                                    "example": "Dt1Ov1o0"
-                                                },
-                                                "taxCoreApi": {
-                                                    "type": "string",
-                                                    "example": "https://api.sandbox.taxcore.online"
-                                                },
-                                                "supportedLanguages": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "type": "string",
-                                                        "example": "en"
-                                                    }
-                                                },
-                                                "taxRates": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "properties": {
-                                                            "label": {
-                                                                "type": "string",
-                                                                "example": "A"
-                                                            },
-                                                            "rate": {
-                                                                "type": "number",
-                                                                "example": 9
-                                                            },
-                                                            "categoryName": {
-                                                                "type": "string",
-                                                                "example": "VAT"
-                                                            },
-                                                            "categoryType": {
-                                                                "type": "integer",
-                                                                "example": 0
-                                                            }
-                                                        },
-                                                        "type": "object"
-                                                    }
-                                                }
-                                            },
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "No active TaxCore connection found for the organization."
-                    },
-                    "422": {
-                        "description": "Validation error — organization_id missing or invalid."
-                    }
-                }
-            }
-        },
-        "/api/integrations/taxcore/environment-parameters": {
-            "get": {
-                "tags": [
-                    "TaxCore Integration"
-                ],
-                "summary": "Get V-SDC environment parameters for an organization",
-                "description": "Returns fiscal environment parameters from the V-SDC: organization name, TIN, timezone, city, and relevant API endpoints.",
-                "operationId": "taxcoreEnvironmentParameters",
-                "parameters": [
-                    {
-                        "name": "organization_id",
-                        "in": "query",
-                        "description": "ID of the organization whose active TaxCore connection will be used.",
-                        "required": true,
-                        "schema": {
-                            "type": "integer",
-                            "example": 1
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Environment parameters retrieved successfully.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Environment parameters retrieved."
-                                        },
-                                        "data": {
-                                            "properties": {
-                                                "organizationName": {
-                                                    "type": "string",
-                                                    "example": "Worth It Ltd"
-                                                },
-                                                "tin": {
-                                                    "type": "string",
-                                                    "example": "718587"
-                                                },
-                                                "locationName": {
-                                                    "type": "string",
-                                                    "example": "Worth It Ltd"
-                                                },
-                                                "address": {
-                                                    "type": "string",
-                                                    "example": "Joint Court"
-                                                },
-                                                "city": {
-                                                    "type": "string",
-                                                    "example": "Beograd"
-                                                },
-                                                "timeZone": {
-                                                    "type": "string",
-                                                    "example": "Europe/Belgrade"
-                                                }
-                                            },
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "No active TaxCore connection found for the organization."
-                    },
-                    "422": {
-                        "description": "Validation error — organization_id missing or invalid."
-                    }
-                }
-            }
-        },
-        "/api/integrations/taxcore/invoices": {
-            "get": {
-                "tags": [
-                    "TaxCore Integration"
-                ],
-                "summary": "List fiscalized invoices (read from local DB)",
-                "description": "Returns invoices persisted in the `sales` table after being signed by TaxCore. By default returns only `status=completed`. Supports filtering by organization, invoice/transaction type, fiscal number and date range. No authentication required.",
-                "operationId": "listTaxcoreInvoices",
-                "parameters": [
-                    {
-                        "name": "organization_id",
-                        "in": "query",
-                        "description": "ID of the organization whose invoices to list. If omitted, returns invoices for all organizations.",
-                        "required": false,
-                        "schema": {
-                            "type": "integer",
-                            "example": 1
-                        }
-                    },
-                    {
-                        "name": "status",
-                        "in": "query",
-                        "description": "Filter by status. Defaults to completed.",
-                        "required": false,
-                        "schema": {
-                            "type": "string",
-                            "example": "completed",
-                            "enum": [
-                                "pending",
-                                "processing",
-                                "completed",
-                                "failed"
-                            ]
-                        }
-                    },
-                    {
-                        "name": "invoiceType",
-                        "in": "query",
-                        "description": "0=Normal, 1=ProForma, 2=Copy, 3=Training, 4=Advance.",
-                        "required": false,
-                        "schema": {
-                            "type": "integer",
-                            "enum": [
-                                0,
-                                1,
-                                2,
-                                3,
-                                4
-                            ]
-                        }
-                    },
-                    {
-                        "name": "transactionType",
-                        "in": "query",
-                        "description": "0=Sale, 1=Refund.",
-                        "required": false,
-                        "schema": {
-                            "type": "integer",
-                            "enum": [
-                                0,
-                                1
-                            ]
-                        }
-                    },
-                    {
-                        "name": "fiscalNumber",
-                        "in": "query",
-                        "description": "Exact fiscal invoice number (TaxCore invoiceNumber).",
-                        "required": false,
-                        "schema": {
-                            "type": "string",
-                            "example": "CPLP77KX-Dt1Ov1o0-5"
-                        }
-                    },
-                    {
-                        "name": "dateFrom",
-                        "in": "query",
-                        "description": "Start date (YYYY-MM-DD). Filters by created_at.",
-                        "required": false,
-                        "schema": {
-                            "type": "string",
-                            "format": "date",
-                            "example": "2026-05-01"
-                        }
-                    },
-                    {
-                        "name": "dateTo",
-                        "in": "query",
-                        "description": "End date (YYYY-MM-DD). Must be on or after dateFrom.",
-                        "required": false,
-                        "schema": {
-                            "type": "string",
-                            "format": "date",
-                            "example": "2026-05-31"
-                        }
-                    },
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "integer",
-                            "example": 1,
-                            "minimum": 1
-                        }
-                    },
-                    {
-                        "name": "pageSize",
-                        "in": "query",
-                        "description": "Items per page (max 100).",
-                        "required": false,
-                        "schema": {
-                            "type": "integer",
-                            "example": 50,
-                            "maximum": 100,
-                            "minimum": 1
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Invoices retrieved successfully."
-                    },
-                    "422": {
                         "description": "Validation error."
-                    }
-                }
-            },
-            "post": {
-                "tags": [
-                    "TaxCore Integration"
-                ],
-                "summary": "Sign and fiscalize an invoice",
-                "description": "Sends an invoice to the V-SDC for fiscal signing. The active TaxCore connection for the given organization is used automatically. Supports all invoice types (Normal, ProForma, Copy, Training, Advance) and transaction types (Sale, Refund). To cancel/reverse a previously signed invoice, send invoiceType=0 + transactionType=1 + referentDocumentNumber pointing to the original invoiceNumber.",
-                "operationId": "taxcoreSignInvoice",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "required": [
-                                    "organization_id",
-                                    "invoiceType",
-                                    "transactionType",
-                                    "items",
-                                    "payment"
-                                ],
-                                "properties": {
-                                    "organization_id": {
-                                        "description": "ID of the organization whose active TaxCore connection will be used.",
-                                        "type": "integer",
-                                        "example": 1
-                                    },
-                                    "invoiceType": {
-                                        "description": "0=Normal, 1=ProForma, 2=Copy, 3=Training, 4=Advance.",
-                                        "type": "integer",
-                                        "example": 0,
-                                        "enum": [
-                                            0,
-                                            1,
-                                            2,
-                                            3,
-                                            4
-                                        ]
-                                    },
-                                    "transactionType": {
-                                        "description": "0=Sale, 1=Refund.",
-                                        "type": "integer",
-                                        "example": 0,
-                                        "enum": [
-                                            0,
-                                            1
-                                        ]
-                                    },
-                                    "dateAndTimeOfIssue": {
-                                        "description": "Issue date/time. Defaults to current time if omitted.",
-                                        "type": "string",
-                                        "format": "date-time",
-                                        "example": "2026-05-27T22:00:00+02:00",
-                                        "nullable": true
-                                    },
-                                    "cashier": {
-                                        "type": "string",
-                                        "example": "Juan Pérez",
-                                        "nullable": true,
-                                        "maxLength": 50
-                                    },
-                                    "buyerId": {
-                                        "type": "string",
-                                        "example": "12345678",
-                                        "nullable": true,
-                                        "maxLength": 20
-                                    },
-                                    "buyerCostCenterId": {
-                                        "type": "string",
-                                        "example": "CC-001",
-                                        "nullable": true,
-                                        "maxLength": 50
-                                    },
-                                    "invoiceNumber": {
-                                        "description": "Optional internal invoice number.",
-                                        "type": "string",
-                                        "example": "2026/001",
-                                        "nullable": true,
-                                        "maxLength": 60
-                                    },
-                                    "referentDocumentNumber": {
-                                        "description": "Required for Refund (transactionType=1), Copy (invoiceType=2), and Advance-linked invoices (invoiceType=4). Must match the invoiceNumber returned by the original signed invoice.",
-                                        "type": "string",
-                                        "example": "CPLP77KX-Dt1Ov1o0-1",
-                                        "nullable": true,
-                                        "maxLength": 50
-                                    },
-                                    "referentDocumentDT": {
-                                        "description": "Issue date/time of the referent document.",
-                                        "type": "string",
-                                        "example": "2026-05-27T22:00:00+02:00",
-                                        "nullable": true
-                                    },
-                                    "items": {
-                                        "type": "array",
-                                        "items": {
-                                            "required": [
-                                                "name",
-                                                "quantity",
-                                                "unitPrice",
-                                                "totalAmount",
-                                                "labels"
-                                            ],
-                                            "properties": {
-                                                "name": {
-                                                    "type": "string",
-                                                    "example": "Producto A"
-                                                },
-                                                "quantity": {
-                                                    "type": "number",
-                                                    "format": "float",
-                                                    "example": 2
-                                                },
-                                                "unitPrice": {
-                                                    "type": "number",
-                                                    "format": "float",
-                                                    "example": 50
-                                                },
-                                                "totalAmount": {
-                                                    "type": "number",
-                                                    "format": "float",
-                                                    "example": 100
-                                                },
-                                                "labels": {
-                                                    "description": "Tax category labels (e.g. A=VAT 9%).",
-                                                    "type": "array",
-                                                    "items": {
-                                                        "type": "string",
-                                                        "example": "A"
-                                                    },
-                                                    "minItems": 1
-                                                },
-                                                "gtin": {
-                                                    "description": "Optional barcode / GTIN.",
-                                                    "type": "string",
-                                                    "example": "01234567890128",
-                                                    "nullable": true,
-                                                    "maxLength": 14,
-                                                    "minLength": 8
-                                                }
-                                            },
-                                            "type": "object"
-                                        },
-                                        "minItems": 1
-                                    },
-                                    "payment": {
-                                        "type": "array",
-                                        "items": {
-                                            "required": [
-                                                "amount",
-                                                "paymentType"
-                                            ],
-                                            "properties": {
-                                                "amount": {
-                                                    "type": "number",
-                                                    "format": "float",
-                                                    "example": 100
-                                                },
-                                                "paymentType": {
-                                                    "description": "0=Other, 1=Cash, 2=Card, 3=Check, 4=WireTransfer, 5=Voucher, 6=MobileMoney.",
-                                                    "type": "integer",
-                                                    "example": 1,
-                                                    "enum": [
-                                                        0,
-                                                        1,
-                                                        2,
-                                                        3,
-                                                        4,
-                                                        5,
-                                                        6
-                                                    ]
-                                                }
-                                            },
-                                            "type": "object"
-                                        },
-                                        "minItems": 1
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Invoice signed and fiscalized successfully.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Invoice signed successfully."
-                                        },
-                                        "data": {
-                                            "properties": {
-                                                "invoiceNumber": {
-                                                    "description": "Signed invoice number. Use as referentDocumentNumber for future Refund/Copy.",
-                                                    "type": "string",
-                                                    "example": "CPLP77KX-Dt1Ov1o0-5"
-                                                },
-                                                "requestedBy": {
-                                                    "type": "string",
-                                                    "example": "CPLP77KX"
-                                                },
-                                                "signedBy": {
-                                                    "type": "string",
-                                                    "example": "Dt1Ov1o0"
-                                                },
-                                                "sdcDateTime": {
-                                                    "type": "string",
-                                                    "format": "date-time",
-                                                    "example": "2026-05-27T22:17:41+02:00"
-                                                },
-                                                "invoiceCounter": {
-                                                    "type": "string",
-                                                    "example": "5/5N"
-                                                },
-                                                "totalAmount": {
-                                                    "type": "number",
-                                                    "example": 100
-                                                },
-                                                "verificationUrl": {
-                                                    "type": "string",
-                                                    "example": "https://sandbox.taxcore.online/v/?vl=..."
-                                                },
-                                                "verificationQRCode": {
-                                                    "description": "Base64-encoded QR code image (GIF).",
-                                                    "type": "string"
-                                                },
-                                                "journal": {
-                                                    "description": "Printable ticket text.",
-                                                    "type": "string"
-                                                },
-                                                "signature": {
-                                                    "description": "Digital signature of the invoice.",
-                                                    "type": "string"
-                                                },
-                                                "businessName": {
-                                                    "type": "string",
-                                                    "example": "Worth It Ltd"
-                                                },
-                                                "tin": {
-                                                    "type": "string",
-                                                    "example": "718587"
-                                                },
-                                                "locationName": {
-                                                    "type": "string",
-                                                    "example": "Worth It Ltd"
-                                                },
-                                                "address": {
-                                                    "type": "string",
-                                                    "example": "Joint Court"
-                                                },
-                                                "taxItems": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "properties": {
-                                                            "label": {
-                                                                "type": "string",
-                                                                "example": "A"
-                                                            },
-                                                            "categoryName": {
-                                                                "type": "string",
-                                                                "example": "VAT"
-                                                            },
-                                                            "rate": {
-                                                                "type": "number",
-                                                                "example": 9
-                                                            },
-                                                            "amount": {
-                                                                "type": "number",
-                                                                "example": 8.26
-                                                            },
-                                                            "categoryType": {
-                                                                "type": "integer",
-                                                                "example": 0
-                                                            }
-                                                        },
-                                                        "type": "object"
-                                                    }
-                                                }
-                                            },
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "No active TaxCore connection found for the organization."
-                    },
-                    "409": {
-                        "description": "V-SDC rejected the invoice — check items, labels or referentDocumentNumber."
-                    },
-                    "422": {
-                        "description": "Validation error — missing or invalid fields."
                     }
                 }
             }
@@ -3668,20 +3054,149 @@
                 ]
             }
         },
+        "/api/integrations/taxcore/invoices": {
+            "get": {
+                "tags": [
+                    "TaxCore Integration"
+                ],
+                "summary": "List fiscalized invoices (read from local DB)",
+                "description": "Returns invoices persisted in the `sales` table after being signed by TaxCore. By default returns only `status=completed`. Supports filtering by invoice/transaction type, fiscal number and date range. organization_id is required. No authentication required.",
+                "operationId": "listTaxcoreInvoices",
+                "parameters": [
+                    {
+                        "name": "organization_id",
+                        "in": "query",
+                        "description": "ID of the organization whose invoices to list.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "description": "Filter by status. Defaults to completed.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "completed",
+                            "enum": [
+                                "pending",
+                                "processing",
+                                "completed",
+                                "failed"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "invoiceType",
+                        "in": "query",
+                        "description": "0=Normal, 1=ProForma, 2=Copy, 3=Training, 4=Advance.",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "enum": [
+                                0,
+                                1,
+                                2,
+                                3,
+                                4
+                            ]
+                        }
+                    },
+                    {
+                        "name": "transactionType",
+                        "in": "query",
+                        "description": "0=Sale, 1=Refund.",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "enum": [
+                                0,
+                                1
+                            ]
+                        }
+                    },
+                    {
+                        "name": "fiscalNumber",
+                        "in": "query",
+                        "description": "Exact fiscal invoice number (TaxCore invoiceNumber).",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "CPLP77KX-Dt1Ov1o0-5"
+                        }
+                    },
+                    {
+                        "name": "dateFrom",
+                        "in": "query",
+                        "description": "Start date (YYYY-MM-DD). Filters by created_at.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-05-01"
+                        }
+                    },
+                    {
+                        "name": "dateTo",
+                        "in": "query",
+                        "description": "End date (YYYY-MM-DD). Must be on or after dateFrom.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-05-31"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1,
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "pageSize",
+                        "in": "query",
+                        "description": "Items per page (max 100).",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 50,
+                            "maximum": 100,
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Invoices retrieved successfully."
+                    },
+                    "422": {
+                        "description": "Validation error — organization_id is required."
+                    }
+                }
+            }
+        },
         "/api/integrations/taxcore/invoices/{id}": {
             "get": {
                 "tags": [
                     "TaxCore Integration"
                 ],
                 "summary": "Get a single fiscalized invoice (read from local DB)",
-                "description": "Returns the full Sale record by its internal ID, including the original request payload, the TaxCore signed response and the Xero response. Reads from the `sales` table. If organization_id is provided, verifies the sale belongs to that organization. No authentication required.",
+                "description": "Returns the full Sale record by its internal ID, including the original request payload, the TaxCore signed response and the Xero response. Reads from the `sales` table. organization_id is required and the sale is verified to belong to that organization. No authentication required.",
                 "operationId": "getTaxcoreInvoice",
                 "parameters": [
                     {
                         "name": "organization_id",
                         "in": "query",
-                        "description": "ID of the organization that owns the invoice. If omitted, the sale is returned regardless of organization.",
-                        "required": false,
+                        "description": "ID of the organization that owns the invoice.",
+                        "required": true,
                         "schema": {
                             "type": "integer",
                             "example": 1
@@ -3706,7 +3221,7 @@
                         "description": "Invoice not found for this organization."
                     },
                     "422": {
-                        "description": "Validation error — organization_id missing/invalid."
+                        "description": "Validation error — organization_id is required."
                     }
                 }
             }

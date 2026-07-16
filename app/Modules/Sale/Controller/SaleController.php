@@ -235,10 +235,10 @@ class SaleController extends Controller
         path: '/api/integrations/taxcore/invoices',
         tags: ['TaxCore Integration'],
         summary: 'List fiscalized invoices (read from local DB)',
-        description: 'Returns invoices persisted in the `sales` table after being signed by TaxCore. By default returns only `status=completed`. Supports filtering by organization, invoice/transaction type, fiscal number and date range. No authentication required.',
+        description: 'Returns invoices persisted in the `sales` table after being signed by TaxCore. By default returns only `status=completed`. Supports filtering by invoice/transaction type, fiscal number and date range. organization_id is required. No authentication required.',
         operationId: 'listTaxcoreInvoices',
         parameters: [
-            new OA\Parameter(name: 'organization_id', in: 'query', required: false, description: 'ID of the organization whose invoices to list. If omitted, returns invoices for all organizations.', schema: new OA\Schema(type: 'integer', example: 1)),
+            new OA\Parameter(name: 'organization_id', in: 'query', required: true, description: 'ID of the organization whose invoices to list.', schema: new OA\Schema(type: 'integer', example: 1)),
             new OA\Parameter(name: 'status', in: 'query', required: false, description: 'Filter by status. Defaults to completed.', schema: new OA\Schema(type: 'string', enum: ['pending', 'processing', 'completed', 'failed'], example: 'completed')),
             new OA\Parameter(name: 'invoiceType', in: 'query', required: false, description: '0=Normal, 1=ProForma, 2=Copy, 3=Training, 4=Advance.', schema: new OA\Schema(type: 'integer', enum: [0, 1, 2, 3, 4])),
             new OA\Parameter(name: 'transactionType', in: 'query', required: false, description: '0=Sale, 1=Refund.', schema: new OA\Schema(type: 'integer', enum: [0, 1])),
@@ -250,14 +250,14 @@ class SaleController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: 'Invoices retrieved successfully.'),
-            new OA\Response(response: 422, description: 'Validation error.'),
+            new OA\Response(response: 422, description: 'Validation error — organization_id is required.'),
         ]
     )]
     public function index(ListSalesRequest $request): JsonResponse
     {
         $criteria = ListSalesCriteria::fromArray($request->validated());
         $paginator = $this->saleService->listInvoices(
-            $request->input('organization_id') !== null ? $request->integer('organization_id') : null,
+            $request->integer('organization_id'),
             $criteria
         );
 
@@ -268,27 +268,27 @@ class SaleController extends Controller
         path: '/api/integrations/taxcore/invoices/{id}',
         tags: ['TaxCore Integration'],
         summary: 'Get a single fiscalized invoice (read from local DB)',
-        description: 'Returns the full Sale record by its internal ID, including the original request payload, the TaxCore signed response and the Xero response. Reads from the `sales` table. If organization_id is provided, verifies the sale belongs to that organization. No authentication required.',
+        description: 'Returns the full Sale record by its internal ID, including the original request payload, the TaxCore signed response and the Xero response. Reads from the `sales` table. organization_id is required and the sale is verified to belong to that organization. No authentication required.',
         operationId: 'getTaxcoreInvoice',
         parameters: [
-            new OA\Parameter(name: 'organization_id', in: 'query', required: false, description: 'ID of the organization that owns the invoice. If omitted, the sale is returned regardless of organization.', schema: new OA\Schema(type: 'integer', example: 1)),
+            new OA\Parameter(name: 'organization_id', in: 'query', required: true, description: 'ID of the organization that owns the invoice.', schema: new OA\Schema(type: 'integer', example: 1)),
             new OA\Parameter(name: 'id', in: 'path', required: true, description: 'Internal Sale ID.', schema: new OA\Schema(type: 'integer', example: 12)),
         ],
         responses: [
             new OA\Response(response: 200, description: 'Invoice retrieved successfully.'),
             new OA\Response(response: 404, description: 'Invoice not found for this organization.'),
-            new OA\Response(response: 422, description: 'Validation error — organization_id missing/invalid.'),
+            new OA\Response(response: 422, description: 'Validation error — organization_id is required.'),
         ]
     )]
     public function getInvoice(Request $request, int $id): JsonResponse
     {
         $request->validate([
-            'organization_id' => 'nullable|integer|exists:organizations,id',
+            'organization_id' => 'required|integer|exists:organizations,id',
         ]);
 
         $sale = $this->saleService->getInvoice(
             $id,
-            $request->input('organization_id') !== null ? $request->integer('organization_id') : null
+            $request->integer('organization_id')
         );
 
         return ApiResponse::success('Invoice retrieved.', 200, SaleResource::make($sale));
