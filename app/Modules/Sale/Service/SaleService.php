@@ -16,12 +16,11 @@ class SaleService
 
     public function createSale(Connector $connector, array $payload): Sale
     {
-        $sale = new Sale;
-        $sale->setOrganizationId($connector->getOrganizationId());
-        $sale->setConnectorId($connector->getId());
-        $sale->setStatus('pending');
-        $sale->setPayload($payload);
-        $sale->setAttempts(0);
+        $sale = Sale::fromPayload(
+            $connector->getOrganizationId(),
+            $connector->getId(),
+            $payload,
+        );
 
         $sale = $this->saleRepository->saveReturn($sale);
 
