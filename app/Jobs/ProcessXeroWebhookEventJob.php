@@ -10,13 +10,6 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 
-/**
- * Xero requires the webhook receiver to respond within 5 seconds, or the
- * delivery is marked failed (and after repeated failures, the webhook is
- * disabled). This job carries the actual work — fetching the resource from
- * Xero, mapping it, and dispatching fiscalization — off the request cycle,
- * so XeroWebhookController::receive() can always return 200 immediately.
- */
 class ProcessXeroWebhookEventJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;

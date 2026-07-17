@@ -16,12 +16,6 @@ class XeroWebhookController extends Controller
 
     }
 
-    /**
-     * Xero requires a 200 within 5 seconds or the delivery (including the
-     * "intent to receive" validation) is marked failed. So this only
-     * validates the signature and hands each event off to a queued job —
-     * it never calls Xero or touches the DB inline.
-     */
     public function receive(Request $request): JsonResponse
     {
         if (!$this->webhookService->isValidSignature($request))

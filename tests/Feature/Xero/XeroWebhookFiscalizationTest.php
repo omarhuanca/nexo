@@ -142,8 +142,6 @@ class XeroWebhookFiscalizationTest extends TestCase
     #[Test]
     public function responses_carry_no_cookies_as_required_by_xero(): void
     {
-        // Xero requires: no cookies in the response headers, for both the
-        // "intent to receive" ping and real event deliveries.
         $intentToReceive = $this->postSignedWebhook([
             'events' => [],
             'firstEventSequence' => 0,
