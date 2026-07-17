@@ -24,6 +24,15 @@ class ConnectorRepository extends AbstractRepository
         return $this->model->where('token', $hash)->first();
     }
 
+    public function findFirstActiveByOrganization(int $organizationId): ?Connector
+    {
+        return $this->model
+            ->where('organization_id', $organizationId)
+            ->where('active', true)
+            ->orderBy('id')
+            ->first();
+    }
+
     public function existsByNameInOrganization(string $name, int $organizationId, ?int $excludeId = null): bool
     {
         return $this->model

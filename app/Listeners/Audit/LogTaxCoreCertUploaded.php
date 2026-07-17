@@ -23,7 +23,6 @@ final readonly class LogTaxCoreCertUploaded
             'organization_id' => $event->organizationId,
             'connection_id' => $event->connectionId,
             'environment' => $event->environment,
-            'vsdc_url' => $event->vsdcUrl,
         ]);
     }
 }

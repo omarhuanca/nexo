@@ -20,9 +20,6 @@ class SaleRepository extends AbstractRepository
         return $this->model->lockForUpdate()->find($id);
     }
 
-    /**
-     * @return Sale[]
-     */
     public function findPendingFiscalByOrganization(int $organizationId): array
     {
         return $this->model
@@ -32,6 +29,11 @@ class SaleRepository extends AbstractRepository
             ->orderBy('created_at')
             ->get()
             ->all();
+    }
+
+    public function findByXeroInvoiceId(string $xeroInvoiceId): ?Sale
+    {
+        return $this->model->where('xero_invoice_id', $xeroInvoiceId)->first();
     }
 
     public function findByIdForOrganization(int $id, int $organizationId): Sale
