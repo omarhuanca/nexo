@@ -25,7 +25,6 @@ class TaxCoreConnectionService
             $organizationId,
             $connection->getId(),
             $environment,
-            $vsdcUrl,
         ));
 
         return $connection;

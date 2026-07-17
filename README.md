@@ -116,6 +116,17 @@ XERO_SCOPES="openid email profile offline_access accounting.settings accounting.
 XERO_WEBHOOK_KEY=your_xero_webhook_signing_key   # from the Xero app's Webhooks tab, used to verify x-xero-signature
 ```
 
+### TaxCore fiscalization defaults (for invoices created directly in Xero)
+
+```env
+TAXCORE_DEFAULT_INVOICE_TYPE=0      # 0=Normal
+TAXCORE_DEFAULT_TRANSACTION_TYPE=0  # 0=Sale
+TAXCORE_DEFAULT_VAT_LABEL=A         # fallback VAT label when the invoice has no per-item mapping
+TAXCORE_DEFAULT_PAYMENT_TYPE=0      # 0=Other
+```
+
+Only used by the `xero/webhook` → `INVOICE` path for invoices with no matching `Sale` (see [Webhooks](#4-webhooks)) — the `/api/sales` flow always sends its own values for these fields.
+
 ### Reverb (Realtime — used by the Agent)
 
 ```env
@@ -175,8 +186,14 @@ The access token is automatically refreshed when it expires (handled by `XeroApi
 
 `POST /api/integrations/xero/webhook` receives Xero webhook notifications (no auth middleware — validated by signature instead).
 
+Xero requires a `200` within **5 seconds** or the delivery — including the "intent to receive" validation Xero runs when you save the webhook URL — is marked failed; repeated failures get the webhook disabled. So `receive()` only validates the signature and queues one `ProcessXeroWebhookEventJob` per event (`onQueue('default')`) — it never calls the Xero API or touches the DB inline. Make sure a worker is listening on the `default` queue (`composer dev`'s `queue:listen --queue=sales,default` already covers it).
+
 - The request must carry an `x-xero-signature` header: `base64(HMAC-SHA256(raw_body, XERO_WEBHOOK_KEY))`. Requests that fail validation are rejected with `401`.
-- For each event in the payload, the server fetches the current `Invoice` or `Contact` from Xero and logs it (`XeroWebhookService::getData()`). Extend this to react to Xero-side changes as needed.
+- For each event, the job fetches the current `Invoice` or `Contact` from Xero and logs it (`XeroWebhookService::getData()`).
+- For `INVOICE` events specifically (`XeroWebhookService::handleInvoiceEvent()`), if the invoice is `ACCREC` + `AUTHORISED`:
+  - If a `Sale` already exists for that `xero_invoice_id` (i.e. it was created through `/api/sales`), it's already been fiscalized by `ProcessSaleJob` — the webhook just refreshes `xero_result` and does nothing else.
+  - Otherwise, the invoice was created **directly in Xero**. The server maps it into a `Sale` and dispatches it to the nexo-agent the same way `/api/sales` does. Since Xero has no concept of invoice type, VAT label, or payment method, those TaxCore-only fields fall back to the defaults in `config/taxcore.php` (`TAXCORE_DEFAULT_*` env vars) — only `buyerId` is recovered from Xero, via the Contact's `TaxNumber`. The connector attributed to this `Sale` is the organization's first active connector (required by the `sales.connector_id` FK); if none exists, the invoice is skipped and a warning is logged.
+  - Draft/voided/non-`ACCREC` invoices are ignored.
 
 ---
 
@@ -223,8 +240,15 @@ Returns a plain-text Bearer token, shown only once (only its SHA-256 hash is sto
 
 ### 3. Flow
 
-1. `ProcessSaleJob` creates the Xero invoice, then builds the V-SDC payload and sets the sale to `pending_fiscal`
-2. It broadcasts a `fiscalization.requested` event on the private channel `agent.{organization_id}` (see `routes/channels.php`)
+A `Sale` reaches TaxCore fiscalization through either of two entry points, both converging on the same dispatch (`TaxCoreSaleService::dispatchFiscalization()`):
+
+- **Connector-originated:** `POST /api/sales` → `ProcessSaleJob` creates the Xero invoice, then dispatches fiscalization.
+- **Xero-originated:** an invoice created directly in Xero → the `xero/webhook` `INVOICE` event maps it to a `Sale` (see [Webhooks](#4-webhooks)), then dispatches fiscalization.
+
+From there, both paths behave the same:
+
+1. The V-SDC payload is built and the sale is set to `pending_fiscal`
+2. A `fiscalization.requested` event is broadcast on the private channel `agent.{organization_id}` (see `routes/channels.php`)
 3. The connected nexo-agent daemon receives it over Reverb, signs the invoice against V-SDC using its local certificate, and calls `POST /api/agent/result`
 4. The sale is marked `completed` (with `fiscal_number`/`fiscal_result`) or `failed` (with `error`)
 5. If the agent was offline when the task was broadcast, it calls `GET /api/agent/pending` on reconnect to catch up
@@ -413,7 +437,8 @@ app/
 │   └── TaxCore/                 TaxCoreApiCall, TaxCoreCertUploaded, TaxCoreInvoiceSigned
 │
 ├── Jobs/
-│   └── ProcessSaleJob      Async: creates the Xero Invoice, then broadcasts a fiscalization task to the agent
+│   ├── ProcessSaleJob             Async: creates the Xero Invoice, then broadcasts a fiscalization task to the agent
+│   └── ProcessXeroWebhookEventJob Async: does the actual Xero webhook work, so receive() can always respond within Xero's 5s window
 │
 ├── Modules/
 │   ├── Agent/              Agent token issuance/auth; serves Reverb config and pending tasks, receives results

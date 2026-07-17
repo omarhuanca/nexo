@@ -14,6 +14,11 @@ class Sale extends BaseEntity
 
     protected $table = 'sales';
 
+    protected static function newFactory()
+    {
+        return \Database\Factories\SaleFactory::new();
+    }
+
     protected $fillable = [
         'organization_id',
         'connector_id',

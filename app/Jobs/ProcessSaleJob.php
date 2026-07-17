@@ -2,7 +2,6 @@
 
 namespace App\Jobs;
 
-use App\Events\FiscalizationRequested;
 use App\Events\Sale\SaleFailed;
 use App\Events\Sale\SaleProcessingStarted;
 use App\Modules\Integration\TaxCore\Service\TaxCoreSaleService;
@@ -14,7 +13,6 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -89,24 +87,7 @@ class ProcessSaleJob implements ShouldQueue
         }
 
         if ($sale->getFiscalNumber() === null) {
-            $vsdcPayload = $taxCoreSaleService->buildPayload($payload);
-            $taskId      = (string) Str::uuid();
-
-            $sale->setStatus('pending_fiscal');
-            $saleRepository->save($sale);
-
-            try {
-                broadcast(new FiscalizationRequested(
-                    organizationId: $organizationId,
-                    taskId: $taskId,
-                    saleId: $sale->id,
-                    method: 'POST',
-                    endpoint: '/api/v3/invoices',
-                    payload: $vsdcPayload,
-                ));
-            } catch (Throwable $e) {
-                report($e);
-            }
+            $taxCoreSaleService->dispatchFiscalization($sale, $saleRepository);
         }
     }
 

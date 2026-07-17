@@ -2,8 +2,36 @@
 
 namespace App\Modules\Integration\TaxCore\Service;
 
+use App\Events\FiscalizationRequested;
+use App\Modules\Sale\Domain\Sale;
+use App\Modules\Sale\Repository\SaleRepository;
+use Illuminate\Support\Str;
+use Throwable;
+
 class TaxCoreSaleService
 {
+    public function dispatchFiscalization(Sale $sale, SaleRepository $saleRepository): void
+    {
+        $vsdcPayload = $this->buildPayload($sale->getPayload());
+        $taskId = (string) Str::uuid();
+
+        $sale->setStatus('pending_fiscal');
+        $saleRepository->save($sale);
+
+        try {
+            broadcast(new FiscalizationRequested(
+                organizationId: $sale->getOrganizationId(),
+                taskId: $taskId,
+                saleId: $sale->id,
+                method: 'POST',
+                endpoint: '/api/v3/invoices',
+                payload: $vsdcPayload,
+            ));
+        } catch (Throwable $e) {
+            report($e);
+        }
+    }
+
     public function buildPayload(array $payload): array
     {
         $taxCorePayload = [

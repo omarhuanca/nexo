@@ -51,7 +51,7 @@ class XeroConnectionService
         return $this->repository->findById($id);
     }
 
-    public function findByTenantId(string $id): XeroConnection
+    public function findByTenantId(string $id): ?XeroConnection
     {
         return $this->repository->findByTenantId($id);
     }
