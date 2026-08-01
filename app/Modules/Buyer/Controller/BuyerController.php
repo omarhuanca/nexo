@@ -58,7 +58,7 @@ class BuyerController extends Controller
                                     new OA\Property(property: 'id', type: 'integer', example: 1),
                                     new OA\Property(property: 'organization_id', type: 'integer', example: 1),
                                     new OA\Property(property: 'name', type: 'string', example: 'Empresa ABC'),
-                                    new OA\Property(property: 'tax_id', type: 'string', example: '12345678'),
+                                    new OA\Property(property: 'document_number', type: 'string', example: '12345678'),
                                     new OA\Property(property: 'active', type: 'boolean', example: true),
                                 ]
                             )
@@ -129,7 +129,7 @@ class BuyerController extends Controller
         path: '/api/buyers',
         tags: ['Buyers'],
         summary: 'Create a new buyer',
-        description: 'Creates a buyer in the catalog. The tax_id must be unique within the organization. Admin endpoint, no authentication required.',
+        description: 'Creates a buyer in the catalog. The document_number must be unique within the organization. Admin endpoint, no authentication required.',
         operationId: 'storeBuyer',
         requestBody: new OA\RequestBody(
             required: true,
@@ -138,13 +138,13 @@ class BuyerController extends Controller
                 properties: [
                     new OA\Property(property: 'organization_id', type: 'integer', example: 1, description: 'ID of the organization.'),
                     new OA\Property(property: 'name', type: 'string', example: 'Empresa ABC', description: 'Buyer display name.'),
-                    new OA\Property(property: 'tax_id', type: 'string', example: '12345678', description: 'Optional tax identification (8-20 digits).'),
+                    new OA\Property(property: 'document_number', type: 'string', example: '12345678', description: 'Optional document number (8-20 digits, country-agnostic).'),
                 ]
             )
         ),
         responses: [
             new OA\Response(response: 201, description: 'Buyer created successfully.'),
-            new OA\Response(response: 409, description: 'Conflict — buyer with same tax_id already exists in this organization.'),
+            new OA\Response(response: 409, description: 'Conflict — buyer with same document number already exists in this organization.'),
             new OA\Response(response: 422, description: 'Validation error.'),
         ]
     )]
@@ -156,7 +156,7 @@ class BuyerController extends Controller
             $buyer = $this->service->createBuyer(
                 $organization,
                 $request->input('name'),
-                $request->input('tax_id')
+                $request->input('document_number')
             );
         } catch (\App\Shared\Exceptions\BusinessConflictException $e) {
             return ApiResponse::error($e->getMessage(), 409);
@@ -175,7 +175,7 @@ class BuyerController extends Controller
         path: '/api/buyers/{id}',
         tags: ['Buyers'],
         summary: 'Update a buyer',
-        description: 'Updates name and/or tax_id. The tax_id must remain unique within the organization. Admin endpoint, no authentication required.',
+        description: 'Updates name and/or document_number. The document_number must remain unique within the organization. Admin endpoint, no authentication required.',
         operationId: 'updateBuyer',
         parameters: [
             new OA\Parameter(
@@ -191,14 +191,14 @@ class BuyerController extends Controller
             content: new OA\JsonContent(
                 properties: [
                     new OA\Property(property: 'name', type: 'string', example: 'Empresa Renombrada', description: 'New name.'),
-                    new OA\Property(property: 'tax_id', type: 'string', example: '87654321', description: 'New tax_id, or null to clear.'),
+                    new OA\Property(property: 'document_number', type: 'string', example: '87654321', description: 'New document number, or null to clear.'),
                 ]
             )
         ),
         responses: [
             new OA\Response(response: 200, description: 'Buyer updated successfully.'),
             new OA\Response(response: 404, description: 'Buyer not found.'),
-            new OA\Response(response: 409, description: 'Conflict — buyer with same tax_id already exists in this organization.'),
+            new OA\Response(response: 409, description: 'Conflict — buyer with same document number already exists in this organization.'),
             new OA\Response(response: 422, description: 'Validation error.'),
         ]
     )]
@@ -206,11 +206,11 @@ class BuyerController extends Controller
     {
         $request->validate([
             'name' => 'sometimes|string|max:255',
-            'tax_id' => 'sometimes|nullable|string|min:8|max:20|regex:/^\d+$/',
+            'document_number' => 'sometimes|nullable|string|min:8|max:20|regex:/^\d+$/',
         ]);
 
         try {
-            $data = $request->only(['name', 'tax_id']);
+            $data = $request->only(['name', 'document_number']);
             $buyer = $this->service->updateBuyer($id, $data);
         } catch (\App\Shared\Exceptions\BusinessConflictException $e) {
             return ApiResponse::error($e->getMessage(), 409);

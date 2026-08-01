@@ -12,13 +12,13 @@ class BuyerService
 {
     public function __construct(private readonly BuyerRepository $repository) {}
 
-    public function createBuyer(Organization $organization, string $name, ?string $taxId): Buyer
+    public function createBuyer(Organization $organization, string $name, ?string $documentNumber): Buyer
     {
-        $buyer = Buyer::at($organization, $name, $taxId);
+        $buyer = Buyer::at($organization, $name, $documentNumber);
 
-        if ($taxId !== null && $this->repository->existsByTaxIdInOrganization($taxId, $organization->getId())) {
+        if ($documentNumber !== null && $this->repository->existsByDocumentNumberInOrganization($documentNumber, $organization->getId())) {
             throw new BusinessConflictException(
-                "A buyer with tax_id '{$taxId}' already exists in this organization."
+                "A buyer with document number '{$documentNumber}' already exists in this organization."
             );
         }
 
@@ -33,40 +33,40 @@ class BuyerService
             ? trim((string) ($data['name'] ?? ''))
             : $buyer->name;
 
-        $newTaxId = $buyer->tax_id;
-        if (array_key_exists('tax_id', $data)) {
-            $raw = $data['tax_id'];
-            $newTaxId = ($raw === null || trim((string) $raw) === '') ? null : trim((string) $raw);
+        $newDocumentNumber = $buyer->document_number;
+        if (array_key_exists('document_number', $data)) {
+            $raw = $data['document_number'];
+            $newDocumentNumber = ($raw === null || trim((string) $raw) === '') ? null : trim((string) $raw);
         }
 
-        Buyer::at($buyer->organization, $newName, $newTaxId);
+        Buyer::at($buyer->organization, $newName, $newDocumentNumber);
 
-        if ($newTaxId !== null && $this->repository->existsByTaxIdInOrganization(
-            $newTaxId,
+        if ($newDocumentNumber !== null && $this->repository->existsByDocumentNumberInOrganization(
+            $newDocumentNumber,
             $buyer->organization_id,
             $buyer->getId()
         )) {
             throw new BusinessConflictException(
-                "A buyer with tax_id '{$newTaxId}' already exists in this organization."
+                "A buyer with document number '{$newDocumentNumber}' already exists in this organization."
             );
         }
 
         $buyer->name = $newName;
-        $buyer->tax_id = $newTaxId;
+        $buyer->document_number = $newDocumentNumber;
 
         return $this->repository->saveReturn($buyer);
     }
 
-    public function findOrCreateByTaxId(Organization $organization, string $name, ?string $taxId): Buyer
+    public function findOrCreateByDocumentNumber(Organization $organization, string $name, ?string $documentNumber): Buyer
     {
-        if ($taxId !== null) {
-            $existing = $this->repository->findByTaxIdForOrganization($taxId, $organization->getId());
+        if ($documentNumber !== null) {
+            $existing = $this->repository->findByDocumentNumberForOrganization($documentNumber, $organization->getId());
             if ($existing) {
                 return $existing;
             }
         }
 
-        return $this->createBuyer($organization, $name, $taxId);
+        return $this->createBuyer($organization, $name, $documentNumber);
     }
 
     public function getBuyerById(int $id): Buyer

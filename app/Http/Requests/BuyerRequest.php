@@ -17,7 +17,7 @@ class BuyerRequest extends FormRequest
         return [
             'organization_id' => 'required|integer|exists:organizations,id',
             'name' => 'required|string|max:255',
-            'tax_id' => 'nullable|string|min:8|max:20|regex:/^\d+$/',
+            'document_number' => 'nullable|string|min:8|max:20|regex:/^\d+$/',
         ];
     }
 
@@ -28,9 +28,9 @@ class BuyerRequest extends FormRequest
             'organization_id.exists' => 'The selected organization does not exist.',
             'name.required' => 'The buyer name is required.',
             'name.max' => 'The buyer name cannot exceed 255 characters.',
-            'tax_id.regex' => 'The tax_id must contain only digits.',
-            'tax_id.min' => 'The tax_id must be at least 8 digits.',
-            'tax_id.max' => 'The tax_id cannot exceed 20 digits.',
+            'document_number.regex' => 'The document number must contain only digits.',
+            'document_number.min' => 'The document number must be at least 8 digits.',
+            'document_number.max' => 'The document number cannot exceed 20 digits.',
         ];
     }
 }

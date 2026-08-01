@@ -14,11 +14,11 @@ return new class extends Migration
                 ->constrained()
                 ->onDelete('restrict');
             $table->string('name', 255);
-            $table->string('tax_id', 20)->nullable();
+            $table->string('document_number', 20)->nullable();
             $table->boolean('active')->default(true);
             $table->timestamps();
 
-            $table->unique(['organization_id', 'tax_id'], 'uniq_buyers_org_tax');
+            $table->unique(['organization_id', 'document_number'], 'uniq_buyers_org_document_number');
             $table->index('organization_id', 'idx_buyers_organization');
             $table->index(['organization_id', 'name'], 'idx_buyers_org_name');
         });

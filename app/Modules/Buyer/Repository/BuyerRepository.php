@@ -13,11 +13,11 @@ class BuyerRepository extends AbstractRepository
         parent::__construct($model);
     }
 
-    public function findByTaxIdForOrganization(string $taxId, int $organizationId): ?Buyer
+    public function findByDocumentNumberForOrganization(string $documentNumber, int $organizationId): ?Buyer
     {
         return $this->model
             ->where('organization_id', $organizationId)
-            ->where('tax_id', $taxId)
+            ->where('document_number', $documentNumber)
             ->first();
     }
 
@@ -29,11 +29,11 @@ class BuyerRepository extends AbstractRepository
             ->paginate($perPage);
     }
 
-    public function existsByTaxIdInOrganization(string $taxId, int $organizationId, ?int $excludeId = null): bool
+    public function existsByDocumentNumberInOrganization(string $documentNumber, int $organizationId, ?int $excludeId = null): bool
     {
         $query = $this->model
             ->where('organization_id', $organizationId)
-            ->where('tax_id', $taxId);
+            ->where('document_number', $documentNumber);
 
         if ($excludeId !== null) {
             $query->where('id', '!=', $excludeId);

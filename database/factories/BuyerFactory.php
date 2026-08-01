@@ -17,7 +17,7 @@ class BuyerFactory extends Factory
         return [
             'organization_id' => Organization::factory(),
             'name' => $this->faker->company(),
-            'tax_id' => $this->faker->unique()->numerify('########'),
+            'document_number' => $this->faker->unique()->numerify('########'),
             'active' => true,
         ];
     }
@@ -37,8 +37,8 @@ class BuyerFactory extends Factory
         return $this->state(fn() => ['organization_id' => $organization->getId()]);
     }
 
-    public function withoutTaxId(): self
+    public function withoutDocumentNumber(): self
     {
-        return $this->state(fn() => ['tax_id' => null]);
+        return $this->state(fn() => ['document_number' => null]);
     }
 }

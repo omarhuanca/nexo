@@ -13,7 +13,7 @@ class BuyerResource extends JsonResource
             'id' => $this->id,
             'organization_id' => $this->organization_id,
             'name' => $this->name,
-            'tax_id' => $this->tax_id,
+            'document_number' => $this->document_number,
             'active' => (bool) $this->active,
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),

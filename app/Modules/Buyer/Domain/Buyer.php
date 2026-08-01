@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * Domain rules (kept identical to the legacy BuyerData value object):
  *  - name is required, non-empty, max 255 chars
- *  - tax_id is optional; when present must be 8-20 digits
+ *  - document_number is optional; when present must be 8-20 digits
  *
  * Instances are created through {@see at()} which validates the input
  * and throws {@see DomainValidationException} on any rule violation.
@@ -29,21 +29,21 @@ class Buyer extends BaseEntity
     use HasFactory, GettersAndSetters;
 
     public const MAX_NAME_LENGTH = 255;
-    public const TAX_ID_MIN_LENGTH = 8;
-    public const TAX_ID_MAX_LENGTH = 20;
+    public const DOCUMENT_NUMBER_MIN_LENGTH = 8;
+    public const DOCUMENT_NUMBER_MAX_LENGTH = 20;
 
-    public const TAX_ID_PATTERN = '/^\d{8,20}$/';
+    public const DOCUMENT_NUMBER_PATTERN = '/^\d{8,20}$/';
 
     public const ERROR_NAME_EMPTY = 'The buyer name cannot be empty.';
     public const ERROR_NAME_TOO_LONG = 'The buyer name cannot exceed 255 characters.';
-    public const ERROR_TAX_ID_INVALID = 'The buyer ID must contain only digits (8-20 characters).';
+    public const ERROR_DOCUMENT_NUMBER_INVALID = 'The buyer document number must contain only digits (8-20 characters).';
 
     protected $table = 'buyers';
 
     protected $fillable = [
         'organization_id',
         'name',
-        'tax_id',
+        'document_number',
         'active',
     ];
 
@@ -61,13 +61,13 @@ class Buyer extends BaseEntity
      *
      * @throws DomainValidationException when any domain rule fails.
      */
-    public static function at(Organization $organization, string $name, ?string $taxId = null): self
+    public static function at(Organization $organization, string $name, ?string $documentNumber = null): self
     {
         $errors = [];
 
         $name = trim($name);
-        $taxIdRaw = $taxId;
-        $taxId = ($taxId === null || trim($taxId) === '') ? null : trim($taxId);
+        $documentNumberRaw = $documentNumber;
+        $documentNumber = ($documentNumber === null || trim($documentNumber) === '') ? null : trim($documentNumber);
 
         if ($name === '') {
             $errors['name'][] = self::ERROR_NAME_EMPTY;
@@ -75,20 +75,20 @@ class Buyer extends BaseEntity
             $errors['name'][] = self::ERROR_NAME_TOO_LONG;
         }
 
-        if ($taxId !== null && ! preg_match(self::TAX_ID_PATTERN, $taxId)) {
-            $errors['tax_id'][] = self::ERROR_TAX_ID_INVALID;
+        if ($documentNumber !== null && ! preg_match(self::DOCUMENT_NUMBER_PATTERN, $documentNumber)) {
+            $errors['document_number'][] = self::ERROR_DOCUMENT_NUMBER_INVALID;
         }
 
         if ($errors !== []) {
             throw new DomainValidationException('Invalid buyer data.', $errors);
         }
 
-        unset($taxIdRaw);
+        unset($documentNumberRaw);
 
         $buyer = new self();
         $buyer->organization_id = $organization->getId();
         $buyer->name = $name;
-        $buyer->tax_id = $taxId;
+        $buyer->document_number = $documentNumber;
         $buyer->active = true;
 
         return $buyer;
@@ -100,23 +100,23 @@ class Buyer extends BaseEntity
     }
 
     /**
-     * Returns true when both this buyer and the given tax_id are non-null
+     * Returns true when both this buyer and the given document_number are non-null
      * and equal. Useful for matching incoming sale payloads against the
      * catalog without doing string juggling at the call site.
      */
-    public function matchesTaxId(?string $taxId): bool
+    public function matchesDocumentNumber(?string $documentNumber): bool
     {
-        if ($this->tax_id === null || $taxId === null) {
+        if ($this->document_number === null || $documentNumber === null) {
             return false;
         }
 
-        return $this->tax_id === $taxId;
+        return $this->document_number === $documentNumber;
     }
 
     public function displayLabel(): string
     {
-        return $this->tax_id
-            ? "{$this->name} ({$this->tax_id})"
+        return $this->document_number
+            ? "{$this->name} ({$this->document_number})"
             : $this->name;
     }
 }
