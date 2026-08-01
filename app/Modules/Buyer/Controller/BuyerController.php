@@ -18,7 +18,12 @@ use OpenApi\Attributes as OA;
 )]
 class BuyerController extends Controller
 {
-    public function __construct(private readonly BuyerService $service) {}
+    private BuyerService $service;
+
+    public function __construct(BuyerService $service)
+    {
+        $this->service = $service;
+    }
 
     #[OA\Get(
         path: '/api/buyers',

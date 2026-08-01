@@ -10,7 +10,12 @@ use App\Shared\Exceptions\NotFoundException;
 
 class BuyerService
 {
-    public function __construct(private readonly BuyerRepository $repository) {}
+    private BuyerRepository $repository;
+
+    public function __construct(BuyerRepository $repository)
+    {
+        $this->repository = $repository;
+    }
 
     public function createBuyer(Organization $organization, string $name, ?string $documentNumber): Buyer
     {
