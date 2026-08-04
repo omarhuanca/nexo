@@ -10,6 +10,7 @@ use App\Modules\Integration\Xero\Controller\XeroItemController;
 use App\Modules\IntegrationEvent\Controller\IntegrationEventController;
 use App\Modules\Sale\Controller\SaleController;
 use App\Modules\Agent\Controller\AgentController;
+use App\Modules\Buyer\Controller\BuyerController;
 
 // ORGANIZATIONS ROUTES
 
@@ -26,6 +27,14 @@ Route::post('/connectors', [ConnectorController::class, 'store']);
 Route::get('/connectors/{id}', [ConnectorController::class, 'show']);
 Route::put('/connectors/{id}', [ConnectorController::class, 'update']);
 Route::delete('/connectors/{id}', [ConnectorController::class, 'destroy']);
+
+// BUYERS ROUTES
+
+Route::get('/buyers', [BuyerController::class, 'index']);
+Route::post('/buyers', [BuyerController::class, 'store']);
+Route::get('/buyers/{id}', [BuyerController::class, 'show']);
+Route::put('/buyers/{id}', [BuyerController::class, 'update']);
+Route::delete('/buyers/{id}', [BuyerController::class, 'destroy']);
 
 // INTEGRATION EVENTS ROUTES
 
