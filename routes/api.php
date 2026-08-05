@@ -11,6 +11,7 @@ use App\Modules\IntegrationEvent\Controller\IntegrationEventController;
 use App\Modules\Sale\Controller\SaleController;
 use App\Modules\Agent\Controller\AgentController;
 use App\Modules\Buyer\Controller\BuyerController;
+use App\Modules\Payment\Controller\PaymentController;
 
 // ORGANIZATIONS ROUTES
 
@@ -35,6 +36,14 @@ Route::post('/buyers', [BuyerController::class, 'store']);
 Route::get('/buyers/{id}', [BuyerController::class, 'show']);
 Route::put('/buyers/{id}', [BuyerController::class, 'update']);
 Route::delete('/buyers/{id}', [BuyerController::class, 'destroy']);
+
+// PAYMENTS ROUTES
+
+Route::get('/sales/{saleId}/payments', [PaymentController::class, 'index']);
+Route::post('/sales/{saleId}/payments', [PaymentController::class, 'store']);
+Route::get('/payments/{id}', [PaymentController::class, 'show']);
+Route::put('/payments/{id}', [PaymentController::class, 'update']);
+Route::delete('/payments/{id}', [PaymentController::class, 'destroy']);
 
 // INTEGRATION EVENTS ROUTES
 
