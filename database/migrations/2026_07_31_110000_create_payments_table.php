@@ -15,12 +15,9 @@ return new class extends Migration
                 ->onDelete('cascade');
             $table->decimal('amount', 14, 4);
             $table->smallInteger('payment_type');
-            $table->smallInteger('sequence')->default(0);
             $table->timestamps();
 
             $table->index('sale_id', 'idx_payments_sale_id');
-            $table->index(['sale_id', 'sequence'], 'idx_payments_sale_sequence');
-
             $table->index('payment_type', 'idx_payments_type');
         });
 

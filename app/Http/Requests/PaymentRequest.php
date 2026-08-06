@@ -17,7 +17,6 @@ class PaymentRequest extends FormRequest
         return [
             'amount' => 'required|numeric|min:0.01',
             'payment_type' => 'required|integer|min:0|max:6',
-            'sequence' => 'sometimes|integer|min:0',
         ];
     }
 
@@ -29,8 +28,6 @@ class PaymentRequest extends FormRequest
             'payment_type.required' => 'The payment_type is required.',
             'payment_type.min' => 'The payment_type must be between 0 and 6.',
             'payment_type.max' => 'The payment_type must be between 0 and 6.',
-            'sequence.integer' => 'The sequence must be an integer.',
-            'sequence.min' => 'The sequence must be 0 or greater.',
         ];
     }
 }

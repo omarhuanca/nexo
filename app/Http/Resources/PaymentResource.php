@@ -14,8 +14,6 @@ class PaymentResource extends JsonResource
             'sale_id' => $this->sale_id,
             'amount' => (float) $this->amount,
             'payment_type' => $this->payment_type,
-            'payment_type_name' => $this->paymentTypeName(),
-            'sequence' => $this->sequence,
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

@@ -17,11 +17,7 @@ class PaymentFactory extends Factory
         return [
             'sale_id' => Sale::factory(),
             'amount' => $this->faker->randomFloat(2, 10, 1000),
-            'payment_type' => $this->faker->randomElement([
-                \App\Modules\Payment\Domain\Payment::PAYMENT_TYPE_CASH,
-                \App\Modules\Payment\Domain\Payment::PAYMENT_TYPE_CARD,
-            ]),
-            'sequence' => 0,
+            'payment_type' => $this->faker->randomElement(\App\Modules\Payment\Domain\Payment::VALID_PAYMENT_TYPES),
         ];
     }
 
@@ -34,7 +30,7 @@ class PaymentFactory extends Factory
     {
         return $this->state(fn() => [
             'amount' => $amount,
-            'payment_type' => \App\Modules\Payment\Domain\Payment::PAYMENT_TYPE_CASH,
+            'payment_type' => 1,
         ]);
     }
 
@@ -42,12 +38,7 @@ class PaymentFactory extends Factory
     {
         return $this->state(fn() => [
             'amount' => $amount,
-            'payment_type' => \App\Modules\Payment\Domain\Payment::PAYMENT_TYPE_CARD,
+            'payment_type' => 2,
         ]);
-    }
-
-    public function withSequence(int $sequence): self
-    {
-        return $this->state(fn() => ['sequence' => $sequence]);
     }
 }

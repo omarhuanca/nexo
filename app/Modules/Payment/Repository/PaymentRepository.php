@@ -18,7 +18,7 @@ class PaymentRepository extends AbstractRepository
     {
         return $this->model
             ->where('sale_id', $saleId)
-            ->orderBy('sequence')
+            ->orderBy('id')
             ->get();
     }
 
@@ -26,7 +26,7 @@ class PaymentRepository extends AbstractRepository
     {
         return $this->model
             ->where('sale_id', $saleId)
-            ->orderBy('sequence')
+            ->orderBy('id')
             ->paginate($perPage);
     }
 

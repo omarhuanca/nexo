@@ -16,9 +16,9 @@ class PaymentService
         $this->repository = $repository;
     }
 
-    public function createPayment(Sale $sale, float $amount, int $paymentType, int $sequence = 0): Payment
+    public function createPayment(Sale $sale, float $amount, int $paymentType): Payment
     {
-        $payment = Payment::at($sale, $amount, $paymentType, $sequence);
+        $payment = Payment::at($sale, $amount, $paymentType);
 
         return $this->repository->saveReturn($payment);
     }
@@ -35,15 +35,10 @@ class PaymentService
             ? (int) ($data['payment_type'] ?? -1)
             : $payment->payment_type;
 
-        $newSequence = array_key_exists('sequence', $data)
-            ? (int) ($data['sequence'] ?? 0)
-            : $payment->sequence;
-
-        Payment::at($payment->sale, $newAmount, $newPaymentType, $newSequence);
+        Payment::at($payment->sale, $newAmount, $newPaymentType);
 
         $payment->amount = $newAmount;
         $payment->payment_type = $newPaymentType;
-        $payment->sequence = $newSequence;
 
         return $this->repository->saveReturn($payment);
     }

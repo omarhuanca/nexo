@@ -31,25 +31,9 @@ class Payment extends BaseEntity
 {
     use HasFactory, GettersAndSetters;
 
-    public const PAYMENT_TYPE_OTHER = 0;
-    public const PAYMENT_TYPE_CASH = 1;
-    public const PAYMENT_TYPE_CARD = 2;
-    public const PAYMENT_TYPE_CHECK = 3;
-    public const PAYMENT_TYPE_WIRE_TRANSFER = 4;
-    public const PAYMENT_TYPE_VOUCHER = 5;
-    public const PAYMENT_TYPE_MOBILE_MONEY = 6;
-
-    public const VALID_PAYMENT_TYPES = [
-        self::PAYMENT_TYPE_OTHER,
-        self::PAYMENT_TYPE_CASH,
-        self::PAYMENT_TYPE_CARD,
-        self::PAYMENT_TYPE_CHECK,
-        self::PAYMENT_TYPE_WIRE_TRANSFER,
-        self::PAYMENT_TYPE_VOUCHER,
-        self::PAYMENT_TYPE_MOBILE_MONEY,
-    ];
-
     public const MAX_AMOUNT = 999999999.99;
+
+    public const VALID_PAYMENT_TYPES = [0, 1, 2, 3, 4, 5, 6];
 
     public const ERROR_AMOUNT_INVALID = 'The payment amount must be greater than zero.';
     public const ERROR_AMOUNT_TOO_LARGE = 'The payment amount cannot exceed 999999999.99.';
@@ -61,13 +45,11 @@ class Payment extends BaseEntity
         'sale_id',
         'amount',
         'payment_type',
-        'sequence',
     ];
 
     protected $casts = [
         'amount' => 'float',
         'payment_type' => 'integer',
-        'sequence' => 'integer',
     ];
 
     protected static function newFactory()
@@ -80,7 +62,7 @@ class Payment extends BaseEntity
      *
      * @throws DomainValidationException when any domain rule fails.
      */
-    public static function at(Sale $sale, float $amount, int $paymentType, int $sequence = 0): self
+    public static function at(Sale $sale, float $amount, int $paymentType): self
     {
         $errors = [];
 
@@ -102,7 +84,6 @@ class Payment extends BaseEntity
         $payment->sale_id = $sale->getId();
         $payment->amount = $amount;
         $payment->payment_type = $paymentType;
-        $payment->sequence = $sequence;
 
         return $payment;
     }
@@ -110,35 +91,5 @@ class Payment extends BaseEntity
     public function sale(): BelongsTo
     {
         return $this->belongsTo(Sale::class);
-    }
-
-    /**
-     * Returns a human-readable name for the payment type.
-     */
-    public function paymentTypeName(): string
-    {
-        return match ($this->payment_type) {
-            self::PAYMENT_TYPE_OTHER => 'Other',
-            self::PAYMENT_TYPE_CASH => 'Cash',
-            self::PAYMENT_TYPE_CARD => 'Card',
-            self::PAYMENT_TYPE_CHECK => 'Check',
-            self::PAYMENT_TYPE_WIRE_TRANSFER => 'Wire Transfer',
-            self::PAYMENT_TYPE_VOUCHER => 'Voucher',
-            self::PAYMENT_TYPE_MOBILE_MONEY => 'Mobile Money',
-            default => 'Unknown',
-        };
-    }
-
-    /**
-     * Returns a short display label for the payment.
-     */
-    public function displayLabel(): string
-    {
-        return sprintf(
-            '%s (%s %s)',
-            $this->paymentTypeName(),
-            number_format($this->amount, 2),
-            $this->sale?->organization?->tax_id ?? ''
-        );
     }
 }
