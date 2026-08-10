@@ -5,7 +5,6 @@ namespace App\Modules\Payment\Domain;
 use App\Modules\Sale\Domain\Sale;
 use App\Shared\Domain\BaseEntity;
 use App\Shared\Exceptions\DomainValidationException;
-use App\Shared\Traits\GettersAndSetters;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -29,7 +28,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Payment extends BaseEntity
 {
-    use HasFactory, GettersAndSetters;
+    use HasFactory;
 
     public const MAX_AMOUNT = 999999999.99;
 
@@ -81,7 +80,7 @@ class Payment extends BaseEntity
         }
 
         $payment = new self();
-        $payment->sale_id = $sale->getId();
+        $payment->sale_id = $sale->id;
         $payment->amount = $amount;
         $payment->payment_type = $paymentType;
 
