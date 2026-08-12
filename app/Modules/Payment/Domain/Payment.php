@@ -79,12 +79,11 @@ class Payment extends BaseEntity
             throw new DomainValidationException('Invalid payment data.', $errors);
         }
 
-        $payment = new self();
-        $payment->sale_id = $sale->id;
-        $payment->amount = $amount;
-        $payment->payment_type = $paymentType;
-
-        return $payment;
+        return new self([
+            'sale_id' => $sale->id,
+            'amount' => $amount,
+            'payment_type' => $paymentType,
+        ]);
     }
 
     public function sale(): BelongsTo
