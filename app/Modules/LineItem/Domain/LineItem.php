@@ -173,18 +173,17 @@ class LineItem extends BaseEntity
             throw new DomainValidationException('Invalid line item data.', $errors);
         }
 
-        $item = new self();
-        $item->sale_id = $sale->id;
-        $item->code = $code;
-        $item->name = $name;
-        $item->quantity = $quantity;
-        $item->unit_price = $unitPrice;
-        $item->total_amount = $totalAmount;
-        $item->labels = array_values(array_map('strval', $labels));
-        $item->account_code = $accountCode;
-        $item->gtin = $gtin === '' ? null : $gtin;
-
-        return $item;
+        return new self([
+            'sale_id' => $sale->id,
+            'code' => $code,
+            'name' => $name,
+            'quantity' => $quantity,
+            'unit_price' => $unitPrice,
+            'total_amount' => $totalAmount,
+            'labels' => array_values(array_map('strval', $labels)),
+            'account_code' => $accountCode,
+            'gtin' => $gtin === '' ? null : $gtin,
+        ]);
     }
 
     public function sale(): BelongsTo
