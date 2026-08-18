@@ -12,6 +12,7 @@ use App\Modules\Sale\Controller\SaleController;
 use App\Modules\Agent\Controller\AgentController;
 use App\Modules\Buyer\Controller\BuyerController;
 use App\Modules\Payment\Controller\PaymentController;
+use App\Modules\Audit\Controller\AuditLogController;
 
 // ORGANIZATIONS ROUTES
 
@@ -83,3 +84,6 @@ Route::middleware('agent.auth')->group(function () {
 // WEBHOOK RECEIVER
 
 Route::post('/integrations/xero/webhook', [XeroWebhookController::class, 'receive']);
+
+// AUDITLOG ROUTES
+Route::get('/audit-logs', [AuditLogController::class, 'show']);
