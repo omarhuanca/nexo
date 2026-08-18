@@ -22,6 +22,7 @@ class TaxCoreController extends Controller
     #[OA\Post(
         path: '/api/integrations/taxcore/connect-agent',
         tags: ['TaxCore Integration'],
+        security: [['bearerAuth' => []]],
         summary: 'Register a TaxCore connection in agent mode',
         description: 'Creates a TaxCore connection record without storing the certificate or PAC on the server. The nexo-agent daemon holds them securely in the OS keychain (DPAPI on Windows) and calls V-SDC directly via mTLS.',
         operationId: 'taxcoreConnectAgent',

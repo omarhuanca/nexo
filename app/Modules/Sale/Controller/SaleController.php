@@ -234,6 +234,7 @@ class SaleController extends Controller
     #[OA\Get(
         path: '/api/integrations/taxcore/invoices',
         tags: ['TaxCore Integration'],
+        security: [['bearerAuth' => []]],
         summary: 'List fiscalized invoices (read from local DB)',
         description: 'Returns invoices persisted in the `sales` table after being signed by TaxCore. By default returns only `status=completed`. Supports filtering by invoice/transaction type, fiscal number and date range. organization_id is required. No authentication required.',
         operationId: 'listTaxcoreInvoices',
@@ -267,6 +268,7 @@ class SaleController extends Controller
     #[OA\Get(
         path: '/api/integrations/taxcore/invoices/{id}',
         tags: ['TaxCore Integration'],
+        security: [['bearerAuth' => []]],
         summary: 'Get a single fiscalized invoice (read from local DB)',
         description: 'Returns the full Sale record by its internal ID, including the original request payload, the TaxCore signed response and the Xero response. Reads from the `sales` table. organization_id is required and the sale is verified to belong to that organization. No authentication required.',
         operationId: 'getTaxcoreInvoice',

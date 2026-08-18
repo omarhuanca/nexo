@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\User;
+use App\Modules\User\Domain\User;
 
 return [
 
@@ -41,6 +41,12 @@ return [
         'web' => [
             'driver' => 'session',
             'provider' => 'users',
+        ],
+
+        'api' => [
+            'driver' => 'jwt',
+            'provider' => 'users',
+            'hash' => false,
         ],
     ],
 

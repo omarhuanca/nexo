@@ -28,6 +28,7 @@ class OrganizationController extends Controller
         summary: 'List organizations',
         description: 'Returns a paginated list of organizations. Optionally filter by name using the search parameter.',
         tags: ['Organizations'],
+        security: [['bearerAuth' => []]],
         parameters: [
             new OA\Parameter(
                 name: 'search',
@@ -115,6 +116,7 @@ class OrganizationController extends Controller
         summary: 'Create a new organization',
         description: 'Creates an organization after validating the request at both HTTP and domain levels. The name must be unique (case-insensitive).',
         tags: ['Organizations'],
+        security: [['bearerAuth' => []]],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
@@ -243,6 +245,7 @@ class OrganizationController extends Controller
         summary: 'Get an organization by ID',
         description: 'Returns a single organization by its ID.',
         tags: ['Organizations'],
+        security: [['bearerAuth' => []]],
         parameters: [
             new OA\Parameter(
                 name: 'id',
@@ -313,6 +316,7 @@ class OrganizationController extends Controller
         summary: 'Update an organization',
         description: 'Updates an existing organization. The name must remain unique (case-insensitive) across all organizations.',
         tags: ['Organizations'],
+        security: [['bearerAuth' => []]],
         parameters: [
             new OA\Parameter(
                 name: 'id',
@@ -453,6 +457,7 @@ class OrganizationController extends Controller
         summary: 'Delete an organization',
         description: 'Deletes an organization by ID. The operation is rejected if the organization has associated records (e.g. connectors) to avoid orphaned references.',
         tags: ['Organizations'],
+        security: [['bearerAuth' => []]],
         parameters: [
             new OA\Parameter(
                 name: 'id',

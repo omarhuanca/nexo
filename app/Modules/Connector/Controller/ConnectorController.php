@@ -24,6 +24,7 @@ class ConnectorController extends Controller
     #[OA\Get(
     path: '/api/connectors',
     tags: ['Connectors'],
+        security: [['bearerAuth' => []]],
     summary: 'List connectors of an organization',
     description: 'Returns a paginated list of connectors belonging to the given organization.',
     operationId: 'indexConnectors',
@@ -128,6 +129,7 @@ class ConnectorController extends Controller
     #[OA\Post(
         path: '/api/connectors',
         tags: ['Connectors'],
+        security: [['bearerAuth' => []]],
         summary: 'Create a new connector',
         description: 'Creates a connector for the given organization. The token is only returned in this response and cannot be retrieved later.',
         operationId: 'storeConnector',
@@ -230,6 +232,7 @@ class ConnectorController extends Controller
     #[OA\Get(
         path: '/api/connectors/{id}',
         tags: ['Connectors'],
+        security: [['bearerAuth' => []]],
         summary: 'Get a connector by ID',
         description: 'Returns a single connector. The token is never exposed in this response.',
         operationId: 'showConnector',
@@ -301,6 +304,7 @@ class ConnectorController extends Controller
     #[OA\Put(
         path: '/api/connectors/{id}',
         tags: ['Connectors'],
+        security: [['bearerAuth' => []]],
         summary: 'Update a connector',
         description: 'Updates the name, allowed events, and active status. The token and organization cannot be changed.',
         operationId: 'updateConnector',
@@ -409,6 +413,7 @@ class ConnectorController extends Controller
     #[OA\Delete(
         path: "/api/connectors/{id}",
         tags: ["Connectors"],
+        security: [['bearerAuth' => []]],
         summary: "Delete a connector",
         description: "Permanently deletes a connector. Existing integration events referencing this connector will also be removed (cascade).",
         operationId: "destroyConnector",

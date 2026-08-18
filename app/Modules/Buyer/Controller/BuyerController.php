@@ -28,6 +28,7 @@ class BuyerController extends Controller
     #[OA\Get(
         path: '/api/buyers',
         tags: ['Buyers'],
+        security: [['bearerAuth' => []]],
         summary: 'List buyers of an organization',
         description: 'Returns a paginated list of buyers belonging to the given organization. Admin endpoint, no authentication required.',
         operationId: 'indexBuyers',
@@ -102,6 +103,7 @@ class BuyerController extends Controller
     #[OA\Get(
         path: '/api/buyers/{id}',
         tags: ['Buyers'],
+        security: [['bearerAuth' => []]],
         summary: 'Get a buyer by ID',
         description: 'Returns a single buyer. Admin endpoint, no authentication required.',
         operationId: 'showBuyer',
@@ -133,6 +135,7 @@ class BuyerController extends Controller
     #[OA\Post(
         path: '/api/buyers',
         tags: ['Buyers'],
+        security: [['bearerAuth' => []]],
         summary: 'Create a new buyer',
         description: 'Creates a buyer in the catalog. The document_number must be unique within the organization. Admin endpoint, no authentication required.',
         operationId: 'storeBuyer',
@@ -179,6 +182,7 @@ class BuyerController extends Controller
     #[OA\Put(
         path: '/api/buyers/{id}',
         tags: ['Buyers'],
+        security: [['bearerAuth' => []]],
         summary: 'Update a buyer',
         description: 'Updates name and/or document_number. The document_number must remain unique within the organization. Admin endpoint, no authentication required.',
         operationId: 'updateBuyer',
@@ -233,6 +237,7 @@ class BuyerController extends Controller
     #[OA\Delete(
         path: '/api/buyers/{id}',
         tags: ['Buyers'],
+        security: [['bearerAuth' => []]],
         summary: 'Delete a buyer',
         description: 'Permanently removes a buyer from the catalog. Admin endpoint, no authentication required.',
         operationId: 'destroyBuyer',
