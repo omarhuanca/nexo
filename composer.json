@@ -13,7 +13,8 @@
         "laravel/framework": "^13.8",
         "laravel/reverb": "^1.10",
         "laravel/tinker": "^3.0",
-        "league/oauth2-client": "^2.9"
+        "league/oauth2-client": "^2.9",
+        "php-open-source-saver/jwt-auth": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

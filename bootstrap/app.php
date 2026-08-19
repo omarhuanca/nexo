@@ -25,6 +25,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'connector.auth' => App\Http\Middleware\ConnectorAuthenticationMiddleware::class,
             'agent.auth' => App\Http\Middleware\AgentAuthMiddleware::class,
+            'jwt' => App\Http\Middleware\JwtMiddleware::class,
+            'scope' => App\Http\Middleware\CheckScope::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -454,6 +454,524 @@
                 ]
             }
         },
+        "/api/auth/login": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Admin login",
+                "description": "Authenticates an admin user with email and password, returns a JWT with the user scopes.",
+                "operationId": "authLogin",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "admin@nexo.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "example": "Password1!"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Login successful.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Login successful"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "access_token": {
+                                                    "type": "string",
+                                                    "example": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+                                                },
+                                                "token_type": {
+                                                    "type": "string",
+                                                    "example": "bearer"
+                                                },
+                                                "expires_in": {
+                                                    "type": "integer",
+                                                    "example": 3600
+                                                },
+                                                "user": {
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "integer",
+                                                            "example": 1
+                                                        },
+                                                        "name": {
+                                                            "type": "string",
+                                                            "example": "Administrator"
+                                                        },
+                                                        "email": {
+                                                            "type": "string",
+                                                            "example": "admin@nexo.com"
+                                                        },
+                                                        "scopes": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "string",
+                                                                "example": "*:*"
+                                                            }
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid credentials."
+                    },
+                    "422": {
+                        "description": "Validation error."
+                    }
+                }
+            }
+        },
+        "/api/auth/refresh": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Refresh JWT token",
+                "description": "Exchanges the current (expired) token for a new one. The new token carries the same scopes as the old one.",
+                "operationId": "authRefresh",
+                "responses": {
+                    "200": {
+                        "description": "Token refreshed.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Token refreshed"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "access_token": {
+                                                    "type": "string"
+                                                },
+                                                "token_type": {
+                                                    "type": "string",
+                                                    "example": "bearer"
+                                                },
+                                                "expires_in": {
+                                                    "type": "integer",
+                                                    "example": 3600
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid or expired token."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/auth/me": {
+            "get": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Get authenticated admin",
+                "description": "Returns the authenticated admin user with their scopes.",
+                "operationId": "authMe",
+                "responses": {
+                    "200": {
+                        "description": "Authenticated admin retrieved.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Authenticated user"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Administrator"
+                                                },
+                                                "email": {
+                                                    "type": "string",
+                                                    "example": "admin@nexo.com"
+                                                },
+                                                "scopes": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "*:*"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not authenticated."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/auth/logout": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Logout — invalidate current token",
+                "description": "Invalidates the current JWT so it can no longer be used.",
+                "operationId": "authLogout",
+                "responses": {
+                    "200": {
+                        "description": "Logged out."
+                    },
+                    "401": {
+                        "description": "Not authenticated."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/buyers": {
+            "get": {
+                "tags": [
+                    "Buyers"
+                ],
+                "summary": "List buyers of an organization",
+                "description": "Returns a paginated list of buyers belonging to the given organization. Admin endpoint, no authentication required.",
+                "operationId": "indexBuyers",
+                "parameters": [
+                    {
+                        "name": "organization_id",
+                        "in": "query",
+                        "description": "ID of the organization to filter buyers by.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "perPage",
+                        "in": "query",
+                        "description": "Number of results per page. Defaults to 15.",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 15,
+                            "default": 15
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Buyers retrieved successfully.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Buyers retrieved successfully."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "organization_id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "Empresa ABC"
+                                                    },
+                                                    "document_number": {
+                                                        "type": "string",
+                                                        "example": "12345678"
+                                                    },
+                                                    "active": {
+                                                        "type": "boolean",
+                                                        "example": true
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "pagination": {
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "last_page": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "per_page": {
+                                                    "type": "integer",
+                                                    "example": 15
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "example": 5
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error — organization_id missing or invalid."
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Buyers"
+                ],
+                "summary": "Create a new buyer",
+                "description": "Creates a buyer in the catalog. The document_number must be unique within the organization. Admin endpoint, no authentication required.",
+                "operationId": "storeBuyer",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "organization_id",
+                                    "name"
+                                ],
+                                "properties": {
+                                    "organization_id": {
+                                        "description": "ID of the organization.",
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "name": {
+                                        "description": "Buyer display name.",
+                                        "type": "string",
+                                        "example": "Empresa ABC"
+                                    },
+                                    "document_number": {
+                                        "description": "Optional document number (8-20 digits, country-agnostic).",
+                                        "type": "string",
+                                        "example": "12345678"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Buyer created successfully."
+                    },
+                    "409": {
+                        "description": "Conflict — buyer with same document number already exists in this organization."
+                    },
+                    "422": {
+                        "description": "Validation error."
+                    }
+                }
+            }
+        },
+        "/api/buyers/{id}": {
+            "get": {
+                "tags": [
+                    "Buyers"
+                ],
+                "summary": "Get a buyer by ID",
+                "description": "Returns a single buyer. Admin endpoint, no authentication required.",
+                "operationId": "showBuyer",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the buyer.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Buyer retrieved successfully."
+                    },
+                    "404": {
+                        "description": "Buyer not found."
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Buyers"
+                ],
+                "summary": "Update a buyer",
+                "description": "Updates name and/or document_number. The document_number must remain unique within the organization. Admin endpoint, no authentication required.",
+                "operationId": "updateBuyer",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the buyer to update.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "description": "New name.",
+                                        "type": "string",
+                                        "example": "Empresa Renombrada"
+                                    },
+                                    "document_number": {
+                                        "description": "New document number, or null to clear.",
+                                        "type": "string",
+                                        "example": "87654321"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Buyer updated successfully."
+                    },
+                    "404": {
+                        "description": "Buyer not found."
+                    },
+                    "409": {
+                        "description": "Conflict — buyer with same document number already exists in this organization."
+                    },
+                    "422": {
+                        "description": "Validation error."
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Buyers"
+                ],
+                "summary": "Delete a buyer",
+                "description": "Permanently removes a buyer from the catalog. Admin endpoint, no authentication required.",
+                "operationId": "destroyBuyer",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the buyer to delete.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Buyer deleted successfully."
+                    },
+                    "404": {
+                        "description": "Buyer not found."
+                    }
+                }
+            }
+        },
         "/api/connectors": {
             "get": {
                 "tags": [
@@ -1958,6 +2476,314 @@
                 ]
             }
         },
+        "/api/integrations/xero/webhook": {
+            "post": {
+                "tags": [
+                    "Xero Webhooks"
+                ],
+                "summary": "Receive Xero webhook notifications",
+                "description": "Receives Xero webhook events. The request must carry an `x-xero-signature` header computed as `base64(HMAC-SHA256(raw_body, XERO_WEBHOOK_KEY))`. Returns 200 within 5s and processes events asynchronously via ProcessXeroWebhookEventJob.",
+                "operationId": "xeroWebhookReceive",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "events": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Webhook accepted (events queued)."
+                    },
+                    "401": {
+                        "description": "Missing or invalid x-xero-signature."
+                    }
+                }
+            }
+        },
+        "/api/sales/{saleId}/lineItems": {
+            "get": {
+                "tags": [
+                    "LineItems"
+                ],
+                "summary": "List line items of a sale",
+                "description": "Returns the paginated line items of the given sale. Admin endpoint, no authentication required.",
+                "operationId": "indexLineItems",
+                "parameters": [
+                    {
+                        "name": "saleId",
+                        "in": "path",
+                        "description": "ID of the sale.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "perPage",
+                        "in": "query",
+                        "description": "Number of results per page. Defaults to 15.",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 15,
+                            "default": 15
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Line items retrieved successfully."
+                    },
+                    "404": {
+                        "description": "Sale not found."
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "LineItems"
+                ],
+                "summary": "Create a line item for a sale",
+                "description": "Persists a new line-item snapshot linked to the given sale. quantity * unit_price must approximately equal total_amount (tolerance 0.01). Admin endpoint, no authentication required.",
+                "operationId": "storeLineItem",
+                "parameters": [
+                    {
+                        "name": "saleId",
+                        "in": "path",
+                        "description": "ID of the sale.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "code",
+                                    "name",
+                                    "quantity",
+                                    "unitPrice",
+                                    "totalAmount",
+                                    "labels",
+                                    "accountCode"
+                                ],
+                                "properties": {
+                                    "code": {
+                                        "type": "string",
+                                        "example": "PROD-001",
+                                        "maxLength": 30
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Producto A",
+                                        "maxLength": 2048
+                                    },
+                                    "quantity": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 2
+                                    },
+                                    "unitPrice": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 50
+                                    },
+                                    "totalAmount": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 100
+                                    },
+                                    "labels": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "example": "A"
+                                        },
+                                        "minItems": 1
+                                    },
+                                    "accountCode": {
+                                        "type": "string",
+                                        "example": "200",
+                                        "maxLength": 10
+                                    },
+                                    "gtin": {
+                                        "type": "string",
+                                        "example": "12345678901234",
+                                        "nullable": true,
+                                        "maxLength": 14
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Line item created successfully."
+                    },
+                    "404": {
+                        "description": "Sale not found."
+                    },
+                    "422": {
+                        "description": "Validation error."
+                    }
+                }
+            }
+        },
+        "/api/lineItems/{id}": {
+            "get": {
+                "tags": [
+                    "LineItems"
+                ],
+                "summary": "Get a line item by ID",
+                "description": "Returns a single line-item snapshot. Admin endpoint, no authentication required.",
+                "operationId": "showLineItem",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the line item.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Line item retrieved successfully."
+                    },
+                    "404": {
+                        "description": "Line item not found."
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "LineItems"
+                ],
+                "summary": "Update a line item",
+                "description": "Updates any of the line-item fields. quantity * unit_price must approximately equal total_amount (tolerance 0.01). Admin endpoint, no authentication required.",
+                "operationId": "updateLineItem",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the line item to update.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "code": {
+                                        "type": "string",
+                                        "maxLength": 30
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "maxLength": 2048
+                                    },
+                                    "quantity": {
+                                        "type": "number",
+                                        "format": "float"
+                                    },
+                                    "unitPrice": {
+                                        "type": "number",
+                                        "format": "float"
+                                    },
+                                    "totalAmount": {
+                                        "type": "number",
+                                        "format": "float"
+                                    },
+                                    "labels": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "accountCode": {
+                                        "type": "string",
+                                        "maxLength": 10
+                                    },
+                                    "gtin": {
+                                        "type": "string",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Line item updated successfully."
+                    },
+                    "404": {
+                        "description": "Line item not found."
+                    },
+                    "422": {
+                        "description": "Validation error."
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "LineItems"
+                ],
+                "summary": "Delete a line item",
+                "description": "Permanently removes a line-item snapshot. Admin endpoint, no authentication required.",
+                "operationId": "destroyLineItem",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the line item to delete.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Line item deleted successfully."
+                    },
+                    "404": {
+                        "description": "Line item not found."
+                    }
+                }
+            }
+        },
         "/api/organizations": {
             "get": {
                 "tags": [
@@ -2712,6 +3538,214 @@
                 }
             }
         },
+        "/api/sales/{saleId}/payments": {
+            "get": {
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "List payments of a sale",
+                "description": "Returns the paginated payments applied to the given sale. Admin endpoint, no authentication required.",
+                "operationId": "indexPayments",
+                "parameters": [
+                    {
+                        "name": "saleId",
+                        "in": "path",
+                        "description": "ID of the sale.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "perPage",
+                        "in": "query",
+                        "description": "Number of results per page. Defaults to 15.",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 15,
+                            "default": 15
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Payments retrieved successfully."
+                    },
+                    "404": {
+                        "description": "Sale not found."
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Create a payment for a sale",
+                "description": "Persists a new payment snapshot linked to the given sale. Admin endpoint, no authentication required.",
+                "operationId": "storePayment",
+                "parameters": [
+                    {
+                        "name": "saleId",
+                        "in": "path",
+                        "description": "ID of the sale.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "amount",
+                                    "payment_type"
+                                ],
+                                "properties": {
+                                    "amount": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 100
+                                    },
+                                    "payment_type": {
+                                        "description": "0=Other, 1=Cash, 2=Card, 3=Check, 4=WireTransfer, 5=Voucher, 6=MobileMoney",
+                                        "type": "integer",
+                                        "example": 1
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Payment created successfully."
+                    },
+                    "404": {
+                        "description": "Sale not found."
+                    },
+                    "422": {
+                        "description": "Validation error."
+                    }
+                }
+            }
+        },
+        "/api/payments/{id}": {
+            "get": {
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Get a payment by ID",
+                "description": "Returns a single payment snapshot. Admin endpoint, no authentication required.",
+                "operationId": "showPayment",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the payment.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Payment retrieved successfully."
+                    },
+                    "404": {
+                        "description": "Payment not found."
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Update a payment",
+                "description": "Updates amount and/or payment_type. Admin endpoint, no authentication required.",
+                "operationId": "updatePayment",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the payment to update.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "amount": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 100
+                                    },
+                                    "payment_type": {
+                                        "type": "integer",
+                                        "example": 2
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Payment updated successfully."
+                    },
+                    "404": {
+                        "description": "Payment not found."
+                    },
+                    "422": {
+                        "description": "Validation error."
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Delete a payment",
+                "description": "Permanently removes a payment snapshot. Admin endpoint, no authentication required.",
+                "operationId": "destroyPayment",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the payment to delete.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Payment deleted successfully."
+                    },
+                    "404": {
+                        "description": "Payment not found."
+                    }
+                }
+            }
+        },
         "/api/sales": {
             "post": {
                 "tags": [
@@ -3234,6 +4268,12 @@
                 "description": "Bearer token issued by POST /api/agent/token. Used by the nexo-agent daemon to authenticate all agent endpoints.",
                 "scheme": "bearer"
             },
+            "bearerAuth": {
+                "type": "http",
+                "description": "Bearer JWT issued by POST /api/auth/login. Pass as: Authorization: Bearer <token>",
+                "bearerFormat": "JWT",
+                "scheme": "bearer"
+            },
             "connectorToken": {
                 "type": "http",
                 "description": "Bearer token issued when a Connector is created. Only visible at creation time.",
@@ -3245,6 +4285,14 @@
         {
             "name": "Agent",
             "description": "Endpoints for the nexo-agent desktop daemon. The daemon connects via WebSocket (Reverb) and receives fiscalization tasks pushed by the server."
+        },
+        {
+            "name": "Authentication",
+            "description": "Admin authentication endpoints. Login returns a JWT containing scopes that authorize access to admin endpoints."
+        },
+        {
+            "name": "Buyers",
+            "description": "Catalog of buyers (customers) belonging to each organization. Buyer entries are mutable; immutable buyer snapshots inside sales continue to live in the Sale payload."
         },
         {
             "name": "Connectors",
@@ -3267,8 +4315,20 @@
             "description": "Endpoints for syncing products (Items) to the Xero accounting platform. Requires an active Xero connection for the organization and a valid connector Bearer token."
         },
         {
+            "name": "Xero Webhooks",
+            "description": "Webhook receiver — authenticated by HMAC signature, not Bearer token."
+        },
+        {
+            "name": "LineItems",
+            "description": "Per-sale line-item snapshots. Each item belongs to a Sale. Mutable catalog of products is not exposed here; code is the Xero ItemCode."
+        },
+        {
             "name": "Organizations",
             "description": "Endpoints for managing organizations"
+        },
+        {
+            "name": "Payments",
+            "description": "Per-sale payment snapshots. Each payment belongs to a Sale. payment_type is the TaxCore/V-SDC code (0-6)."
         },
         {
             "name": "Sales",
