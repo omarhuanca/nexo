@@ -12,6 +12,7 @@ use App\Modules\IntegrationEvent\Controller\IntegrationEventController;
 use App\Modules\Sale\Controller\SaleController;
 use App\Modules\Agent\Controller\AgentController;
 use App\Modules\Buyer\Controller\BuyerController;
+use App\Modules\LineItem\Controller\LineItemController;
 use App\Modules\Payment\Controller\PaymentController;
 
 // =====================================================================
@@ -134,3 +135,12 @@ Route::middleware('agent.auth')->group(function () {
 // =====================================================================
 
 Route::post('/integrations/xero/webhook', [XeroWebhookController::class, 'receive']);
+
+// LINE ITEMS ROUTES
+
+Route::get('/sales/{saleId}/lineItems', [LineItemController::class, 'index']);
+Route::post('/sales/{saleId}/lineItems', [LineItemController::class, 'store']);
+Route::get('/lineItems/{id}', [LineItemController::class, 'show']);
+Route::put('/lineItems/{id}', [LineItemController::class, 'update']);
+Route::delete('/lineItems/{id}', [LineItemController::class, 'destroy']);
+
