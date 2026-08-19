@@ -9,4 +9,5 @@ return [
     'invoices'      => ['read'],
     'buyers'        => ['read', 'write'],
     'payments'      => ['read', 'write'],
+    'lineitems'     => ['read', 'write'],
 ];

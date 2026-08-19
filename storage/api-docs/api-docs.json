@@ -92,12 +92,7 @@
                     "422": {
                         "description": "Validation error — organization_id missing or not found."
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             }
         },
         "/api/agent/config": {
@@ -810,12 +805,7 @@
                     "422": {
                         "description": "Validation error — organization_id missing or invalid."
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             },
             "post": {
                 "tags": [
@@ -865,12 +855,7 @@
                     "422": {
                         "description": "Validation error."
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             }
         },
         "/api/buyers/{id}": {
@@ -900,12 +885,7 @@
                     "404": {
                         "description": "Buyer not found."
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             },
             "put": {
                 "tags": [
@@ -961,12 +941,7 @@
                     "422": {
                         "description": "Validation error."
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             },
             "delete": {
                 "tags": [
@@ -994,12 +969,7 @@
                     "404": {
                         "description": "Buyer not found."
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             }
         },
         "/api/connectors": {
@@ -1166,12 +1136,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             },
             "post": {
                 "tags": [
@@ -1367,12 +1332,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             }
         },
         "/api/connectors/{id}": {
@@ -1504,12 +1464,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             },
             "put": {
                 "tags": [
@@ -1732,12 +1687,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             },
             "delete": {
                 "tags": [
@@ -1831,12 +1781,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             }
         },
         "/api/integration-events": {
@@ -2161,12 +2106,7 @@
                     "422": {
                         "description": "Validation error."
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             }
         },
         "/api/integrations/xero/connect": {
@@ -2196,12 +2136,7 @@
                     "422": {
                         "description": "Validation error — organization_id missing or not found."
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             }
         },
         "/api/integrations/xero/callback": {
@@ -2315,12 +2250,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             }
         },
         "/api/integrations/xero/{connectionId}/contacts": {
@@ -2419,12 +2349,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             }
         },
         "/api/integrations/products": {
@@ -2587,6 +2512,278 @@
                 }
             }
         },
+        "/api/sales/{saleId}/lineItems": {
+            "get": {
+                "tags": [
+                    "LineItems"
+                ],
+                "summary": "List line items of a sale",
+                "description": "Returns the paginated line items of the given sale. Admin endpoint, no authentication required.",
+                "operationId": "indexLineItems",
+                "parameters": [
+                    {
+                        "name": "saleId",
+                        "in": "path",
+                        "description": "ID of the sale.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "perPage",
+                        "in": "query",
+                        "description": "Number of results per page. Defaults to 15.",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 15,
+                            "default": 15
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Line items retrieved successfully."
+                    },
+                    "404": {
+                        "description": "Sale not found."
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "LineItems"
+                ],
+                "summary": "Create a line item for a sale",
+                "description": "Persists a new line-item snapshot linked to the given sale. quantity * unit_price must approximately equal total_amount (tolerance 0.01). Admin endpoint, no authentication required.",
+                "operationId": "storeLineItem",
+                "parameters": [
+                    {
+                        "name": "saleId",
+                        "in": "path",
+                        "description": "ID of the sale.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "code",
+                                    "name",
+                                    "quantity",
+                                    "unitPrice",
+                                    "totalAmount",
+                                    "labels",
+                                    "accountCode"
+                                ],
+                                "properties": {
+                                    "code": {
+                                        "type": "string",
+                                        "example": "PROD-001",
+                                        "maxLength": 30
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Producto A",
+                                        "maxLength": 2048
+                                    },
+                                    "quantity": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 2
+                                    },
+                                    "unitPrice": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 50
+                                    },
+                                    "totalAmount": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 100
+                                    },
+                                    "labels": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "example": "A"
+                                        },
+                                        "minItems": 1
+                                    },
+                                    "accountCode": {
+                                        "type": "string",
+                                        "example": "200",
+                                        "maxLength": 10
+                                    },
+                                    "gtin": {
+                                        "type": "string",
+                                        "example": "12345678901234",
+                                        "nullable": true,
+                                        "maxLength": 14
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Line item created successfully."
+                    },
+                    "404": {
+                        "description": "Sale not found."
+                    },
+                    "422": {
+                        "description": "Validation error."
+                    }
+                }
+            }
+        },
+        "/api/lineItems/{id}": {
+            "get": {
+                "tags": [
+                    "LineItems"
+                ],
+                "summary": "Get a line item by ID",
+                "description": "Returns a single line-item snapshot. Admin endpoint, no authentication required.",
+                "operationId": "showLineItem",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the line item.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Line item retrieved successfully."
+                    },
+                    "404": {
+                        "description": "Line item not found."
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "LineItems"
+                ],
+                "summary": "Update a line item",
+                "description": "Updates any of the line-item fields. quantity * unit_price must approximately equal total_amount (tolerance 0.01). Admin endpoint, no authentication required.",
+                "operationId": "updateLineItem",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the line item to update.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "code": {
+                                        "type": "string",
+                                        "maxLength": 30
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "maxLength": 2048
+                                    },
+                                    "quantity": {
+                                        "type": "number",
+                                        "format": "float"
+                                    },
+                                    "unitPrice": {
+                                        "type": "number",
+                                        "format": "float"
+                                    },
+                                    "totalAmount": {
+                                        "type": "number",
+                                        "format": "float"
+                                    },
+                                    "labels": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "accountCode": {
+                                        "type": "string",
+                                        "maxLength": 10
+                                    },
+                                    "gtin": {
+                                        "type": "string",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Line item updated successfully."
+                    },
+                    "404": {
+                        "description": "Line item not found."
+                    },
+                    "422": {
+                        "description": "Validation error."
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "LineItems"
+                ],
+                "summary": "Delete a line item",
+                "description": "Permanently removes a line-item snapshot. Admin endpoint, no authentication required.",
+                "operationId": "destroyLineItem",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the line item to delete.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Line item deleted successfully."
+                    },
+                    "404": {
+                        "description": "Line item not found."
+                    }
+                }
+            }
+        },
         "/api/organizations": {
             "get": {
                 "tags": [
@@ -2716,12 +2913,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             },
             "post": {
                 "tags": [
@@ -2902,12 +3094,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             }
         },
         "/api/organizations/{id}": {
@@ -3020,12 +3207,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             },
             "put": {
                 "tags": [
@@ -3235,12 +3417,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             },
             "delete": {
                 "tags": [
@@ -3358,12 +3535,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             }
         },
         "/api/sales/{saleId}/payments": {
@@ -3404,12 +3576,7 @@
                     "404": {
                         "description": "Sale not found."
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             },
             "post": {
                 "tags": [
@@ -3466,12 +3633,7 @@
                     "422": {
                         "description": "Validation error."
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             }
         },
         "/api/payments/{id}": {
@@ -3501,12 +3663,7 @@
                     "404": {
                         "description": "Payment not found."
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             },
             "put": {
                 "tags": [
@@ -3558,12 +3715,7 @@
                     "422": {
                         "description": "Validation error."
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             },
             "delete": {
                 "tags": [
@@ -3591,12 +3743,7 @@
                     "404": {
                         "description": "Payment not found."
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             }
         },
         "/api/sales": {
@@ -4067,12 +4214,7 @@
                     "422": {
                         "description": "Validation error — organization_id is required."
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             }
         },
         "/api/integrations/taxcore/invoices/{id}": {
@@ -4115,12 +4257,7 @@
                     "422": {
                         "description": "Validation error — organization_id is required."
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             }
         }
     },
@@ -4180,6 +4317,10 @@
         {
             "name": "Xero Webhooks",
             "description": "Webhook receiver — authenticated by HMAC signature, not Bearer token."
+        },
+        {
+            "name": "LineItems",
+            "description": "Per-sale line-item snapshots. Each item belongs to a Sale. Mutable catalog of products is not exposed here; code is the Xero ItemCode."
         },
         {
             "name": "Organizations",

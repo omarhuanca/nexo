@@ -31,7 +31,6 @@ class PaymentController extends Controller
     #[OA\Get(
         path: '/api/sales/{saleId}/payments',
         tags: ['Payments'],
-        security: [['bearerAuth' => []]],
         summary: 'List payments of a sale',
         description: 'Returns the paginated payments applied to the given sale. Admin endpoint, no authentication required.',
         operationId: 'indexPayments',
@@ -74,7 +73,6 @@ class PaymentController extends Controller
     #[OA\Post(
         path: '/api/sales/{saleId}/payments',
         tags: ['Payments'],
-        security: [['bearerAuth' => []]],
         summary: 'Create a payment for a sale',
         description: 'Persists a new payment snapshot linked to the given sale. Admin endpoint, no authentication required.',
         operationId: 'storePayment',
@@ -130,7 +128,6 @@ class PaymentController extends Controller
     #[OA\Get(
         path: '/api/payments/{id}',
         tags: ['Payments'],
-        security: [['bearerAuth' => []]],
         summary: 'Get a payment by ID',
         description: 'Returns a single payment snapshot. Admin endpoint, no authentication required.',
         operationId: 'showPayment',
@@ -158,7 +155,6 @@ class PaymentController extends Controller
     #[OA\Put(
         path: '/api/payments/{id}',
         tags: ['Payments'],
-        security: [['bearerAuth' => []]],
         summary: 'Update a payment',
         description: 'Updates amount and/or payment_type. Admin endpoint, no authentication required.',
         operationId: 'updatePayment',
@@ -205,7 +201,6 @@ class PaymentController extends Controller
     #[OA\Delete(
         path: '/api/payments/{id}',
         tags: ['Payments'],
-        security: [['bearerAuth' => []]],
         summary: 'Delete a payment',
         description: 'Permanently removes a payment snapshot. Admin endpoint, no authentication required.',
         operationId: 'destroyPayment',

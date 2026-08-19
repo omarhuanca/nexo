@@ -24,7 +24,6 @@ class XeroController extends Controller
     #[OA\Get(
         path: '/api/integrations/xero/connect',
         tags: ['Xero Integration'],
-        security: [['bearerAuth' => []]],
         summary: 'Initiate Xero OAuth2 authorization',
         description: 'Stores the organization_id in the server session and redirects to the Xero authorization page to begin the OAuth2 flow. After the user grants access, Xero redirects to the callback URL where the connection is saved and linked to this organization.',
         operationId: 'xeroConnect',
@@ -54,7 +53,6 @@ class XeroController extends Controller
     #[OA\Get(
         path: '/api/integrations/xero/callback',
         tags: ['Xero Integration'],
-        security: [['bearerAuth' => []]],
         summary: 'Xero OAuth2 callback',
         description: 'Handles the redirect from Xero after the user authorizes the app. Exchanges the authorization code for tokens, links the connection to the organization stored in session (set during /connect), and persists the XeroConnection record. This endpoint is called automatically by Xero — do not call it directly.',
         operationId: 'xeroCallback',
@@ -118,7 +116,6 @@ class XeroController extends Controller
     #[OA\Get(
         path: '/api/integrations/xero/{connectionId}/contacts',
         tags: ['Xero Integration'],
-        security: [['bearerAuth' => []]],
         summary: 'List Xero contacts for a connection',
         description: 'Fetches the list of contacts from Xero using the given connection. The connection must belong to an organization. Tokens are refreshed automatically if expired.',
         operationId: 'xeroGetContacts',

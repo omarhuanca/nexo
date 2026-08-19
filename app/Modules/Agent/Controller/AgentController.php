@@ -35,7 +35,6 @@ class AgentController extends Controller
     #[OA\Post(
         path: '/api/agent/token',
         tags: ['Agent'],
-        security: [['bearerAuth' => []]],
         summary: 'Create an agent token for an organization',
         description: 'Generates a one-time-visible Bearer token that the nexo-agent daemon uses to authenticate. Store it immediately — it cannot be recovered.',
         operationId: 'agentCreateToken',
