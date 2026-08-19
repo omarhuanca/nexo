@@ -4,6 +4,7 @@ namespace App\Modules\Audit\Controller;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AuditLogRequest;
+use App\Http\Resources\AuditLogResource;
 use App\Http\Responses\ApiResponse;
 use App\Modules\Audit\Service\AuditLogService;
 use App\Shared\Exceptions\NotFoundException;
@@ -17,7 +18,11 @@ use OpenApi\Attributes as OA;
 )]
 class AuditLogController extends Controller
 {
-    public function __construct(private readonly AuditLogService $service) {}
+    private AuditLogService $service;
+
+    public function __construct(AuditLogService $service) {
+        $this->service = $service;
+    }
 
     #[OA\Get(
         path: '/api/audit-logs',
@@ -33,6 +38,20 @@ class AuditLogController extends Controller
                 description: 'Log date in format YYYY-MM-DD',
                 schema: new OA\Schema(type: 'string', format: 'date', example: '2026-08-17')
             ),
+            new OA\Parameter(
+                name: 'page',
+                in: 'query',
+                required: false,
+                description: 'Page number. Defaults to 1.',
+                schema: new OA\Schema(type: 'integer', minimum: 1, default: 1, example: 1)
+            ),
+            new OA\Parameter(
+                name: 'perPage',
+                in: 'query',
+                required: false,
+                description: 'Number of entries per page. Defaults to 15, maximum 100.',
+                schema: new OA\Schema(type: 'integer', minimum: 1, maximum: 100, default: 15, example: 15)
+            ),
         ],
         responses: [
             new OA\Response(
@@ -44,11 +63,19 @@ class AuditLogController extends Controller
                         new OA\Property(property: 'message', type: 'string'),
                         new OA\Property(
                             property: 'data',
+                            type: 'array',
+                            items: new OA\Items(type: 'object')
+                        ),
+                        new OA\Property(
+                            property: 'pagination',
                             type: 'object',
                             properties: [
-                                new OA\Property(property: 'date', type: 'string', format: 'date'),
-                                new OA\Property(property: 'count', type: 'integer'),
-                                new OA\Property(property: 'entries', type: 'array', items: new OA\Items(type:'object')),
+                                new OA\Property(property: 'current_page', type: 'integer'),
+                                new OA\Property(property: 'last_page', type: 'integer'),
+                                new OA\Property(property: 'per_page', type: 'integer'),
+                                new OA\Property(property: 'total', type: 'integer'),
+                                new OA\Property(property: 'from', type: 'integer', nullable: true),
+                                new OA\Property(property: 'to', type: 'integer', nullable: true),
                             ]
                         ),
                     ]
@@ -63,17 +90,16 @@ class AuditLogController extends Controller
     public function show(AuditLogRequest $request): JsonResponse
     {
         try {
-            $date = $request->validated('date');
-            $entries = $this->service->getLogByDate($date);
+            $paginator = $this->service->paginateLogByDate(
+                $request->validated('date'),
+                $request->integer('page', 1),
+                $request->integer('perPage', 15)
+            );
 
-            return ApiResponse::success(
+            return ApiResponse::paginated(
                 'Audit log retrieved successfully.',
-                200,
-                [
-                    'date' => $date,
-                    'count' => count($entries),
-                    'entries' => $entries
-                ]
+                $paginator,
+                AuditLogResource::class
             );
         } catch (NotFoundException) {
             return ApiResponse::notFound('Audit log');

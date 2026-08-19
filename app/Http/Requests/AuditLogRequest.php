@@ -15,6 +15,8 @@ class AuditLogRequest extends FormRequest
     {
         return [
             'date' => ['required', 'date_format:Y-m-d'],
+            'page' => ['sometimes', 'integer', 'min:1'],
+            'perPage' => ['sometimes', 'integer', 'min:1', 'max:100'],
         ];
     }
 }
