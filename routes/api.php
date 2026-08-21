@@ -13,6 +13,7 @@ use App\Modules\Agent\Controller\AgentController;
 use App\Modules\Buyer\Controller\BuyerController;
 use App\Modules\LineItem\Controller\LineItemController;
 use App\Modules\Payment\Controller\PaymentController;
+use App\Modules\Audit\Controller\AuditLogController;
 
 // ORGANIZATIONS ROUTES
 
@@ -92,3 +93,6 @@ Route::post('/sales/{saleId}/lineItems', [LineItemController::class, 'store']);
 Route::get('/lineItems/{id}', [LineItemController::class, 'show']);
 Route::put('/lineItems/{id}', [LineItemController::class, 'update']);
 Route::delete('/lineItems/{id}', [LineItemController::class, 'destroy']);
+
+// AUDITLOG ROUTES
+Route::get('/audit-logs', [AuditLogController::class, 'show']);
