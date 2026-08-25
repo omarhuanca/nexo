@@ -12,18 +12,18 @@ use UnexpectedValueException;
 
 class AuditLogService
 {
-    public function paginateAllLogs(?string $cursor = null, int $perPage = 15): array {
+    public function paginateAllLogs(string $cursor = '', int $perPage = 15): array {
         if ($perPage < 1 || $perPage > 100) {
             throw new InvalidArgumentException('perPage must be between 1 and 100.');
         }
 
         $files = $this->getAuditFiles();
-        $position = $this->decodeCursor($cursor);
-
         $fileIndex = 0;
         $entryIndex = 0;
+        $cursorFileIndex = 0;
 
-        if ($position !== null) {
+        if ($cursor !== '') {
+            $position = $this->decodeCursor($cursor);
             $fileIndex = array_search($position['file'], $files, true);
 
             if ($fileIndex === false) {
@@ -31,10 +31,11 @@ class AuditLogService
             }
 
             $entryIndex = $position['entry'];
+            $cursorFileIndex = $fileIndex;
         }
 
         $entries = [];
-        $nextCursor = null;
+        $nextCursor = '';
         $hasMore = false;
 
         for (; $fileIndex < count($files); $fileIndex++) {
@@ -42,7 +43,9 @@ class AuditLogService
             $date = $this->extractDateFromFilename($filename);
             $fileEntries = $this->readEntriesFromFile($date);
 
-            $currentEntryIndex = $fileIndex === ($position !== null ? array_search($position['file'], $files, true) : 0 ) ? $entryIndex : 0;
+            $currentEntryIndex = $fileIndex === $cursorFileIndex
+                ? $entryIndex
+                : 0;
 
             for ($currentEntryIndex; $currentEntryIndex < count($fileEntries); $currentEntryIndex++) {
                 $entries[] = $fileEntries[$currentEntryIndex];
@@ -52,7 +55,7 @@ class AuditLogService
                     $hasMore = $nextEntryIndex < count($fileEntries) || $fileIndex + 1 < count($files);
 
                     if ($hasMore) {
-                        $nextCursor = $this->encodeCursor(['file' => $filename, 'entry' => $nextEntryIndex, ]);
+                        $nextCursor = $this->encodeCursor(['file' => $filename, 'entry' => $nextEntryIndex]);
                     }
 
                     break 2;
@@ -180,9 +183,9 @@ class AuditLogService
     {
         $files = glob(storage_path('logs/audit-*.log')) ?: [];
 
-        $files = array_filter($files, static fn (string $file): bool => is_file($file) && is_readable($file));
+        $files = array_filter($files, $this->isReadableFile(...));
 
-        usort($files, static fn (string $left, string $right): int => strcmp(basename($right), basename($left)));
+        usort($files, $this->compareFilesByNameDescending(...));
 
         return array_values(array_map('basename', $files));
 
@@ -204,12 +207,8 @@ class AuditLogService
         return rtrim(strtr(base64_encode($json), '+/', '-_'), '=');
     }
 
-    private function decodeCursor(?string $cursor): ?array
+    private function decodeCursor(string $cursor): array
     {
-        if ($cursor === null || $cursor === '') {
-            return null;
-        }
-
         $padding = strlen($cursor) % 4;
 
         if ($padding !== 0) {
@@ -233,5 +232,13 @@ class AuditLogService
             throw new InvalidArgumentException('Invalid audit log cursor.');
         }
         return $position;
+    }
+
+    private function isReadableFile(string $file): bool{
+        return is_file($file) && is_readable($file);
+    }
+
+    private function compareFilesByNameDescending(string $left, string $right): int {
+        return strcmp(basename($right),basename($left));
     }
 }

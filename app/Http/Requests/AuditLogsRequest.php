@@ -15,7 +15,7 @@ class AuditLogsRequest extends FormRequest
     {
         return [
             'perPage' => ['sometimes', 'integer', 'min:1', 'max:100'],
-            'cursor' => ['sometimes', 'nullable', 'string']
+            'cursor' => ['sometimes', 'string']
         ];
     }
 }

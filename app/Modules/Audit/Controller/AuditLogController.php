@@ -43,8 +43,8 @@ class AuditLogController extends Controller
                 name: 'cursor',
                 in: 'query',
                 required: false,
-                description: 'Cursor returned by the previous response.',
-                schema: new OA\Schema(type: 'string', nullable: true, example: null)
+                description: 'Cursor returned by the previous response. Leave empty for the first request.',
+                schema: new OA\Schema(type: 'string', example: '')
             ),
         ],
         responses: [
@@ -56,7 +56,7 @@ class AuditLogController extends Controller
     public function index(AuditLogsRequest $request): JsonResponse
     {
         $result = $this->service->paginateAllLogs(
-            $request->input('cursor'),
+            $request->input('cursor', ''),
             $request->integer('perPage', 15)
         );
 
