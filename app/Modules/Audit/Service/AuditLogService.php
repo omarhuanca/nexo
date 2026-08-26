@@ -12,6 +12,15 @@ use UnexpectedValueException;
 
 class AuditLogService
 {
+    private readonly string $logDirectory;
+
+    public function __construct(string $logDirectory = '')
+    {
+        $this->logDirectory = $logDirectory !== ''
+            ? $logDirectory
+            : storage_path('logs');
+    }
+
     public function paginateAllLogs(string $cursor = '', int $perPage = 15): array {
         if ($perPage < 1 || $perPage > 100) {
             throw new InvalidArgumentException('perPage must be between 1 and 100.');
@@ -112,7 +121,9 @@ class AuditLogService
 
     private function openLogFile(string $date): SplFileObject
     {
-        $filename = storage_path("logs/audit-{$date}.log");
+        $filename = $this->logDirectory
+            . DIRECTORY_SEPARATOR
+            . "audit-{$date}.log";
 
         if (!is_file($filename) || !is_readable($filename)) {
             throw new NotFoundException("No audit log found for date {$date}");
@@ -181,7 +192,11 @@ class AuditLogService
 
     private function getAuditFiles(): array
     {
-        $files = glob(storage_path('logs/audit-*.log')) ?: [];
+        $files = glob(
+            $this->logDirectory
+            . DIRECTORY_SEPARATOR
+            . 'audit-*.log'
+        ) ?: [];
 
         $files = array_filter($files, $this->isReadableFile(...));
 
