@@ -12,7 +12,7 @@ class TaxCoreSaleService
 {
     public function dispatchFiscalization(Sale $sale, SaleRepository $saleRepository): void
     {
-        $vsdcPayload = $this->buildPayload($sale->getPayload());
+        $vsdcPayload = $this->buildPayload($sale);
         $taskId = (string) Str::uuid();
 
         $sale->setStatus('pending_fiscal');
@@ -32,25 +32,31 @@ class TaxCoreSaleService
         }
     }
 
-    public function buildPayload(array $payload): array
+    public function buildPayload(Sale $sale): array
     {
+        $payload = $sale->getPayload();
+
         $taxCorePayload = [
             'invoiceType' => $payload['invoiceType'],
             'transactionType' => $payload['transactionType'],
             'cashier' => $payload['cashier'] ?? null,
-            'buyerId' => $payload['buyer']['id'] ?? null,
-            'items' => array_map(
-                fn(array $item) => array_filter([
-                    'name' => $item['name'],
-                    'quantity' => $item['quantity'],
-                    'unitPrice' => $item['unitPrice'],
-                    'totalAmount' => $item['totalAmount'],
-                    'labels' => $item['labels'],
-                    'gtin' => $item['gtin'] ?? null,
-                ], fn($v) => $v !== null),
-                $payload['items']
-            ),
-            'payment' => $payload['payment'],
+            'buyerId' => $sale->buyer?->document_number,
+            'items' => $sale->lineItems->map(
+                fn($item) => array_filter([
+                    'name' => $item->name,
+                    'quantity' => $item->quantity,
+                    'unitPrice' => $item->unit_price,
+                    'totalAmount' => $item->total_amount,
+                    'labels' => $item->labels,
+                    'gtin' => $item->gtin,
+                ], fn($v) => $v !== null)
+            )->toArray(),
+            'payment' => $sale->payments->map(
+                fn($p) => [
+                    'amount' => $p->amount,
+                    'paymentType' => $p->payment_type,
+                ]
+            )->toArray(),
         ];
 
         if (!empty($payload['referentDocumentNumber'])) {
