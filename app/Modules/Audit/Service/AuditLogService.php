@@ -47,7 +47,7 @@ class AuditLogService
         $nextCursor = '';
         $hasMore = false;
 
-        for (; $fileIndex < count($files); $fileIndex++) {
+        while ($fileIndex < count($files) && count($entries) < $perPage) {
             $filename = $files[$fileIndex];
             $date = $this->extractDateFromFilename($filename);
             $fileEntries = $this->readEntriesFromFile($date);
@@ -56,7 +56,7 @@ class AuditLogService
                 ? $entryIndex
                 : 0;
 
-            for ($currentEntryIndex; $currentEntryIndex < count($fileEntries); $currentEntryIndex++) {
+            while ($currentEntryIndex < count($fileEntries) && count($entries) < $perPage) {
                 $entries[] = $fileEntries[$currentEntryIndex];
 
                 if (count($entries) >= $perPage) {
@@ -67,9 +67,12 @@ class AuditLogService
                         $nextCursor = $this->encodeCursor(['file' => $filename, 'entry' => $nextEntryIndex]);
                     }
 
-                    break 2;
                 }
+
+                $currentEntryIndex++;
             }
+
+            $fileIndex++;
         }
 
         return [
