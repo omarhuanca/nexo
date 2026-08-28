@@ -15,12 +15,22 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 class SaleService
 {
+    private readonly SaleRepository $saleRepository;
+    private readonly BuyerService $buyerService;
+    private readonly LineItemService $lineItemService;
+    private readonly PaymentService $paymentService;
+
     public function __construct(
-        private readonly SaleRepository $saleRepository,
-        private readonly BuyerService $buyerService,
-        private readonly LineItemService $lineItemService,
-        private readonly PaymentService $paymentService,
-    ) {}
+        SaleRepository $saleRepository,
+        BuyerService $buyerService,
+        LineItemService $lineItemService,
+        PaymentService $paymentService,
+    ) {
+        $this->saleRepository = $saleRepository;
+        $this->buyerService = $buyerService;
+        $this->lineItemService = $lineItemService;
+        $this->paymentService = $paymentService;
+    }
 
     public function createSale(Connector $connector, array $payload): Sale
     {
@@ -37,7 +47,7 @@ class SaleService
         $buyer = $this->buyerService->findOrCreateByDocumentNumber(
             $sale->organization,
             $payload['buyer']['name'] ?? '',
-            $payload['buyer']['id'] ?? null,
+            $payload['buyer']['id'],
         );
         $sale->setBuyerId($buyer->getId());
 
@@ -51,7 +61,7 @@ class SaleService
                 (float) $rawItem['totalAmount'],
                 $rawItem['labels'],
                 $rawItem['accountCode'],
-                $rawItem['gtin'] ?? null,
+                $rawItem['gtin'],
             );
         }
 
