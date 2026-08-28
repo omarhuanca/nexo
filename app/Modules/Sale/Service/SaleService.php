@@ -61,7 +61,7 @@ class SaleService
                 (float) $rawItem['totalAmount'],
                 $rawItem['labels'],
                 $rawItem['accountCode'],
-                $rawItem['gtin'],
+                $rawItem['gtin'] ?? null,
             );
         }
 
