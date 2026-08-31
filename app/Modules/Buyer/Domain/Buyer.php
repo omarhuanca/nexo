@@ -13,11 +13,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Buyer catalog entity.
  *
  * Represents a real-world buyer (customer) belonging to an organization.
- * This is a MUTABLE catalog entry, separate from the immutable
- * {@see \App\Modules\Sale\Domain\ValueObjects\BuyerData} snapshot that
- * lives inside a Sale's payload.
+ * This is a MUTABLE catalog entry, reusable across multiple sales.
  *
- * Domain rules (kept identical to the legacy BuyerData value object):
+ * Domain rules:
  *  - name is required, non-empty, max 255 chars
  *  - document_number is optional; when present must be 8-20 digits
  *

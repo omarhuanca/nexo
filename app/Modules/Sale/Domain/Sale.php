@@ -2,15 +2,17 @@
 
 namespace App\Modules\Sale\Domain;
 
+use App\Modules\Buyer\Domain\Buyer;
 use App\Modules\Connector\Domain\Connector;
+use App\Modules\LineItem\Domain\LineItem;
 use App\Modules\Organization\Domain\Organization;
-use App\Modules\Sale\Domain\ValueObjects\BuyerData;
-use App\Modules\Sale\Domain\ValueObjects\LineItem;
-use App\Modules\Sale\Domain\ValueObjects\Payment;
+use App\Modules\Payment\Domain\Payment;
 use App\Shared\Domain\BaseEntity;
 use App\Shared\Exceptions\DomainValidationException;
 use App\Shared\Traits\GettersAndSetters;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Sale extends BaseEntity
 {
@@ -58,6 +60,7 @@ class Sale extends BaseEntity
     protected $fillable = [
         'organization_id',
         'connector_id',
+        'buyer_id',
         'status',
         'payload',
         'xero_invoice_id',
@@ -86,21 +89,35 @@ class Sale extends BaseEntity
         return $this->belongsTo(Connector::class);
     }
 
+    public function buyer(): BelongsTo
+    {
+        return $this->belongsTo(Buyer::class);
+    }
+
+    public function lineItems(): HasMany
+    {
+        return $this->hasMany(LineItem::class);
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
     /**
-     * Build a fully-validated Sale aggregate from a raw payload.
+     * Build a validated Sale aggregate from a raw payload.
      *
-     * Delegates intra-aggregate validation to the corresponding Value Objects and
-     * applies Sale-level structural rules. Cross-aggregate invariants (e.g. the
-     * total of items matching the total of payments) are intentionally NOT
-     * enforced here yet — they belong to a later iteration of the validation
-     * plan and are guarded by the HTTP layer (FormRequest) for the time being.
+     * Enforces Sale-level structural rules only (invoiceType, transactionType,
+     * non-empty items/payment arrays). Data-level validation of buyer, items
+     * and payments is delegated to their respective module entities
+     * ({@see Buyer::at()}, {@see LineItem::at()}, {@see Payment::at()})
+     * when they are created during the sale creation flow.
      *
      * @param  int                   $organizationId
      * @param  int                   $connectorId
      * @param  array<string, mixed>  $payload
      *
-     * @throws DomainValidationException when any Sale-level structural rule fails
-     *                                   or any contained Value Object is invalid.
+     * @throws DomainValidationException when any Sale-level structural rule fails.
      */
     public static function fromPayload(int $organizationId, int $connectorId, array $payload): self
     {
@@ -132,54 +149,12 @@ class Sale extends BaseEntity
             throw new DomainValidationException('Invalid sale payload.', $errors);
         }
 
-        // Build Value Objects — each one validates its own slice and may throw.
-        try {
-            $buyer = BuyerData::fromArray($payload['buyer'] ?? []);
-        } catch (DomainValidationException $e) {
-            foreach ($e->getErrors() as $field => $messages) {
-                $errors["buyer.{$field}"] = $messages;
-            }
-            $buyer = null;
-        }
-
-        $items = [];
-        foreach ($rawItems as $index => $rawItem) {
-            try {
-                $items[] = LineItem::fromArray(is_array($rawItem) ? $rawItem : []);
-            } catch (DomainValidationException $e) {
-                foreach ($e->getErrors() as $field => $messages) {
-                    $errors["items.{$index}.{$field}"] = $messages;
-                }
-            }
-        }
-
-        $payments = [];
-        foreach ($rawPayments as $index => $rawPayment) {
-            try {
-                $payments[] = Payment::fromArray(is_array($rawPayment) ? $rawPayment : []);
-            } catch (DomainValidationException $e) {
-                foreach ($e->getErrors() as $field => $messages) {
-                    $errors["payment.{$index}.{$field}"] = $messages;
-                }
-            }
-        }
-
-        if ($errors !== []) {
-            throw new DomainValidationException('Invalid sale payload.', $errors);
-        }
-
-        if ($buyer === null) {
-            // Unreachable under the validation above, but keeps the type system happy.
-            throw new DomainValidationException('Invalid sale payload.', ['buyer' => ['Invalid buyer.']]);
-        }
-
-        $sale = new self;
-        $sale->setOrganizationId($organizationId);
-        $sale->setConnectorId($connectorId);
-        $sale->setStatus(self::STATUS_PENDING);
-        $sale->setPayload($payload);
-        $sale->setAttempts(0);
-
-        return $sale;
+        return new self([
+            'organization_id' => $organizationId,
+            'connector_id' => $connectorId,
+            'status' => self::STATUS_PENDING,
+            'payload' => $payload,
+            'attempts' => 0,
+        ]);
     }
 }

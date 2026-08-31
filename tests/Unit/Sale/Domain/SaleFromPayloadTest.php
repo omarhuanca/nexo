@@ -3,12 +3,13 @@
 namespace Tests\Unit\Sale\Domain;
 
 use App\Modules\Sale\Domain\Sale;
+use App\Shared\Exceptions\DomainValidationException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
-use Tests\Unit\Sale\ValueObjects\ValueObjectTestCase;
+use Tests\TestCase;
 
 #[CoversClass(Sale::class)]
-class SaleFromPayloadTest extends ValueObjectTestCase
+class SaleFromPayloadTest extends TestCase
 {
     private function validPayload(array $overrides = []): array
     {
@@ -40,6 +41,18 @@ class SaleFromPayloadTest extends ValueObjectTestCase
     private function build(array $overrides = []): Sale
     {
         return Sale::fromPayload(1, 1, $this->validPayload($overrides));
+    }
+
+    private function assertDomainError(callable $action, string $field, string $message): void
+    {
+        try {
+            $action();
+            $this->fail("Expected DomainValidationException for field '{$field}' was not thrown.");
+        } catch (DomainValidationException $e) {
+            $errors = $e->getErrors();
+            $this->assertArrayHasKey($field, $errors, "Field '{$field}' not present in errors.");
+            $this->assertContains($message, $errors[$field]);
+        }
     }
 
     #[Test]
@@ -92,72 +105,6 @@ class SaleFromPayloadTest extends ValueObjectTestCase
             fn () => $this->build(['transactionType' => 99]),
             'transactionType',
             Sale::ERROR_TRANSACTION_TYPE_INVALID,
-        );
-    }
-
-    #[Test]
-    public function it_aggregates_buyer_and_item_errors_with_indexed_paths(): void
-    {
-        $this->assertDomainHasErrors(
-            fn () => $this->build([
-                'buyer' => ['name' => ''],
-                'items' => [
-                    [
-                        'code'        => 'PROD-001',
-                        'name'        => 'Test Product',
-                        'quantity'    => 0,
-                        'unitPrice'   => 50.00,
-                        'totalAmount' => 50.00,
-                        'labels'      => ['A'],
-                        'accountCode' => '200',
-                    ],
-                ],
-            ]),
-            ['buyer.name', 'items.0.quantity'],
-        );
-    }
-
-    #[Test]
-    public function it_aggregates_payment_errors_with_indexed_paths(): void
-    {
-        $this->assertDomainHasErrors(
-            fn () => $this->build([
-                'payment' => [
-                    ['amount' => -1, 'paymentType' => 99],
-                ],
-            ]),
-            ['payment.0.amount', 'payment.0.paymentType'],
-        );
-    }
-
-    #[Test]
-    public function it_aggregates_errors_across_multiple_buyers_items_and_payments(): void
-    {
-        $this->assertDomainHasErrors(
-            fn () => $this->build([
-                'buyer'   => ['name' => ''],
-                'items'   => [
-                    [
-                        'code'        => 'PROD-001',
-                        'name'        => 'Test Product',
-                        'quantity'    => 0,
-                        'unitPrice'   => 50.00,
-                        'totalAmount' => 50.00,
-                        'labels'      => ['A'],
-                        'accountCode' => '200',
-                    ],
-                ],
-                'payment' => [
-                    ['amount' => 50.00, 'paymentType' => 1],
-                    ['amount' => -1, 'paymentType' => 99],
-                ],
-            ]),
-            [
-                'buyer.name',
-                'items.0.quantity',
-                'payment.1.amount',
-                'payment.1.paymentType',
-            ],
         );
     }
 }

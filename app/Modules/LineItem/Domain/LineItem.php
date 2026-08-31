@@ -12,14 +12,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * LineItem snapshot entity.
  *
  * Represents a single line item of a sale invoice. This is a
- * SNAPSHOT (per-sale) entity, separate from the immutable
- * {@see \App\Modules\Sale\Domain\ValueObjects\LineItem} value object
- * that lives inside a Sale's payload.
+ * SNAPSHOT (per-sale) immutable fiscal record.
  *
- * Like Payment, it has no organization_id (transitively through sale)
- * and no active flag (it is an immutable fiscal record).
- *
- * Domain rules (kept identical to the legacy LineItem value object):
+ * Domain rules:
  *  - code, name and accountCode must be non-empty (trimmed)
  *  - quantity must be positive and bounded
  *  - unit_price and total_amount must be non-negative and bounded

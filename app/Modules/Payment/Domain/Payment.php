@@ -12,14 +12,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Payment snapshot entity.
  *
  * Represents a single payment applied to a sale invoice. This is a
- * SNAPSHOT (per-sale) entity, separate from the immutable
- * {@see \App\Modules\Sale\Domain\ValueObjects\Payment} value object that
- * lives inside a Sale's payload.
+ * SNAPSHOT (per-sale) immutable fiscal record.
  *
- * Like LineItem, it has no organization_id (transitively through sale)
- * and no active flag (it is an immutable fiscal record).
- *
- * Domain rules (kept identical to the legacy Payment value object):
+ * Domain rules:
  *  - amount must be positive and bounded
  *  - payment_type must be one of the allowed values (0..6)
  *
