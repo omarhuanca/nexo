@@ -96,3 +96,4 @@ Route::delete('/lineItems/{id}', [LineItemController::class, 'destroy']);
 
 // AUDITLOG ROUTES
 Route::get('/audit-logs', [AuditLogController::class, 'show']);
+Route::get('/audit-logs/all', [AuditLogController::class, 'index']);

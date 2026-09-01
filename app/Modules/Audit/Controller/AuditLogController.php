@@ -3,7 +3,8 @@
 namespace App\Modules\Audit\Controller;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\AuditLogRequest;
+use App\Http\Requests\AuditLogByDateRequest;
+use App\Http\Requests\AuditLogsRequest;
 use App\Http\Resources\AuditLogResource;
 use App\Http\Responses\ApiResponse;
 use App\Modules\Audit\Service\AuditLogService;
@@ -22,6 +23,48 @@ class AuditLogController extends Controller
 
     public function __construct(AuditLogService $service) {
         $this->service = $service;
+    }
+
+    #[OA\Get(
+        path: '/api/audit-logs/all',
+        tags: ['Audit Logs'],
+        summary: 'Get all audit logs',
+        description: 'Returns audit entries from all audit files, ordered from newest to oldest using cursor pagination.',
+        operationId: 'getAllAuditLogs',
+        parameters: [
+            new OA\Parameter(
+                name: 'perPage',
+                in: 'query',
+                required: false,
+                description: 'Number of entries per response.',
+                schema: new OA\Schema(type: 'integer', minimum: 1, maximum: 100, default: 15, example: 10)
+            ),
+            new OA\Parameter(
+                name: 'cursor',
+                in: 'query',
+                required: false,
+                description: 'Cursor returned by the previous response. Leave empty for the first request.',
+                schema: new OA\Schema(type: 'string', example: '')
+            ),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Audit logs retrieved successfully.'),
+            new OA\Response(response: 422, description: 'Invalid pagination or cursor.'),
+            new OA\Response(response: 500, description: 'Audit log contains invalid JSON.'),
+        ]
+    )]
+    public function index(AuditLogsRequest $request): JsonResponse
+    {
+        $result = $this->service->paginateAllLogs(
+            $request->input('cursor', ''),
+            $request->integer('perPage', 15)
+        );
+
+        return ApiResponse::success(
+            'Audit logs retrieved successfully.',
+            200,
+            $result
+        );
     }
 
     #[OA\Get(
@@ -87,7 +130,7 @@ class AuditLogController extends Controller
             new OA\Response(response: 500, description: 'Audit log contains invalid JSON or cannot be read.')
         ]
     )]
-    public function show(AuditLogRequest $request): JsonResponse
+    public function show(AuditLogByDateRequest $request): JsonResponse
     {
         try {
             $paginator = $this->service->paginateLogByDate(
