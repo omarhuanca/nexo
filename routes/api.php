@@ -14,6 +14,7 @@ use App\Modules\Buyer\Controller\BuyerController;
 use App\Modules\LineItem\Controller\LineItemController;
 use App\Modules\Payment\Controller\PaymentController;
 use App\Modules\Audit\Controller\AuditLogController;
+use App\Modules\Product\Controller\ProductController;
 
 // ORGANIZATIONS ROUTES
 
@@ -38,6 +39,11 @@ Route::post('/buyers', [BuyerController::class, 'store']);
 Route::get('/buyers/{id}', [BuyerController::class, 'show']);
 Route::put('/buyers/{id}', [BuyerController::class, 'update']);
 Route::delete('/buyers/{id}', [BuyerController::class, 'destroy']);
+
+// PRODUCTS ROUTES
+
+Route::get('/products', [ProductController::class, 'index']);
+Route::post('/products', [ProductController::class, 'store']);
 
 // PAYMENTS ROUTES
 
@@ -96,3 +102,4 @@ Route::delete('/lineItems/{id}', [LineItemController::class, 'destroy']);
 
 // AUDITLOG ROUTES
 Route::get('/audit-logs', [AuditLogController::class, 'show']);
+Route::get('/audit-logs/all', [AuditLogController::class, 'index']);
