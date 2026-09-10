@@ -45,6 +45,8 @@ class ProcessSaleJob implements ShouldQueue
             return;
         }
 
+        $sale->load(['buyer', 'lineItems', 'payments']);
+
         Log::shareContext([
             'sale_id' => $this->saleId,
             'organization_id' => $sale->getOrganizationId(),
@@ -63,12 +65,11 @@ class ProcessSaleJob implements ShouldQueue
             $attempt,
         ));
 
-        $payload        = $sale->getPayload();
         $organizationId = $sale->getOrganizationId();
 
         if ($sale->getXeroInvoiceId() === null) {
             $xeroConnection = $xeroConnectionService->findActiveByOrganization($organizationId);
-            $xeroResult     = $xeroInvoiceSaleService->createInvoice($xeroConnection, $payload);
+            $xeroResult     = $xeroInvoiceSaleService->createInvoice($xeroConnection, $sale);
 
             $xeroInvoiceId = $xeroResult['Invoices'][0]['InvoiceID'] ?? null;
             $invoiceNumber = $xeroResult['Invoices'][0]['InvoiceNumber'] ?? null;
