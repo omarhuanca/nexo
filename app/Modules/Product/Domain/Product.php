@@ -2,11 +2,13 @@
 
 namespace App\Modules\Product\Domain;
 
+use App\Modules\Integration\Xero\Domain\XeroProduct;
 use App\Modules\Organization\Domain\Organization;
 use App\Shared\Domain\BaseEntity;
 use App\Shared\Exceptions\DomainValidationException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Product extends BaseEntity
 {
@@ -102,5 +104,10 @@ class Product extends BaseEntity
 	public function organization(): BelongsTo
 	{
 		return $this->belongsTo(Organization::class);
+	}
+
+	public function xeroProduct(): HasOne
+	{
+		return $this->hasOne(XeroProduct::class);
 	}
 }

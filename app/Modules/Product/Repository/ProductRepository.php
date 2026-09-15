@@ -32,4 +32,14 @@ class ProductRepository extends AbstractRepository
             ->where('code', $code)
             ->exists();
     }
+
+    public function findByCodeInOrganization(
+        string $code,
+        int $organizationId,
+    ): ?Product {
+        return $this->model
+            ->where('organization_id', $organizationId)
+            ->where('code', $code)
+            ->first();
+    }
 }

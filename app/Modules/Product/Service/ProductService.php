@@ -42,6 +42,30 @@ class ProductService
         ));
     }
 
+    public function findOrCreateByCode(
+        Organization $organization,
+        string $code,
+        string $name = '',
+        string $description = '',
+        float $salePrice = 0.0,
+        float $costPrice = 0.0,
+    ): Product {
+        $existing = $this->repository->findByCodeInOrganization($code, $organization->id);
+
+        if ($existing) {
+            return $existing;
+        }
+
+        return $this->createProduct(
+            $organization,
+            $code,
+            $name ?: $code,
+            $description,
+            $salePrice,
+            $costPrice,
+        );
+    }
+
     public function paginateByOrganization(
         int $organizationId,
         int $perPage = 15,

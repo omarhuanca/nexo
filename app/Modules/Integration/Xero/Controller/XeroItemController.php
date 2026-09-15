@@ -133,7 +133,7 @@ class XeroItemController extends Controller
         $connector = $request->attributes->get('connector');
         $connection = $this->connectionService->findActiveByOrganization($connector->getOrganizationId());
 
-        $result = $this->itemService->syncItems($connection, $request->validated()['items']);
+        $result = $this->itemService->syncItems($connection, $request->validated()['productIds']);
 
         return ApiResponse::success('Items synced to Xero successfully.', 200, $result);
     }

@@ -7,6 +7,7 @@ use App\Http\Requests\LineItemRequest;
 use App\Http\Resources\LineItemResource;
 use App\Http\Responses\ApiResponse;
 use App\Modules\LineItem\Service\LineItemService;
+use App\Modules\Product\Domain\Product;
 use App\Modules\Sale\Domain\Sale;
 use App\Shared\Exceptions\DomainValidationException;
 use App\Shared\Exceptions\NotFoundException;
@@ -69,15 +70,13 @@ class LineItemController extends Controller
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
-                required: ['code', 'name', 'quantity', 'unitPrice', 'totalAmount', 'labels', 'accountCode'],
+                required: ['product_id', 'quantity', 'total_amount', 'labels', 'account_code'],
                 properties: [
-                    new OA\Property(property: 'code', type: 'string', maxLength: 30, example: 'PROD-001'),
-                    new OA\Property(property: 'name', type: 'string', maxLength: 2048, example: 'Producto A'),
+                    new OA\Property(property: 'product_id', type: 'integer', example: 1),
                     new OA\Property(property: 'quantity', type: 'number', format: 'float', example: 2),
-                    new OA\Property(property: 'unitPrice', type: 'number', format: 'float', example: 50.00),
-                    new OA\Property(property: 'totalAmount', type: 'number', format: 'float', example: 100.00),
+                    new OA\Property(property: 'total_amount', type: 'number', format: 'float', example: 100.00),
                     new OA\Property(property: 'labels', type: 'array', minItems: 1, items: new OA\Items(type: 'string', example: 'A')),
-                    new OA\Property(property: 'accountCode', type: 'string', maxLength: 10, example: '200'),
+                    new OA\Property(property: 'account_code', type: 'string', maxLength: 10, example: '200'),
                     new OA\Property(property: 'gtin', type: 'string', maxLength: 14, nullable: true, example: '12345678901234'),
                 ]
             )
@@ -96,21 +95,18 @@ class LineItemController extends Controller
         }
 
         try {
-            $data = $request->only([
-                'code', 'name', 'quantity', 'unit_price', 'total_amount',
-                'labels', 'account_code', 'gtin',
-            ]);
+            $product = Product::findOrFail($request->input('product_id'));
             $item = $this->service->createLineItem(
                 $sale,
-                $data['code'],
-                $data['name'],
-                (float) $data['quantity'],
-                (float) $data['unit_price'],
-                (float) $data['total_amount'],
-                (array) $data['labels'],
-                $data['account_code'],
-                $data['gtin'] ?? null,
+                $product,
+                (float) $request->input('quantity'),
+                (float) $request->input('total_amount'),
+                (array) $request->input('labels'),
+                $request->input('account_code'),
+                $request->input('gtin'),
             );
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
+            return ApiResponse::error('Product not found.', 404);
         } catch (DomainValidationException $e) {
             $errors = $e->getErrors();
             if (! empty($errors)) {

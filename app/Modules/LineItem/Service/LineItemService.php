@@ -4,6 +4,7 @@ namespace App\Modules\LineItem\Service;
 
 use App\Modules\LineItem\Domain\LineItem;
 use App\Modules\LineItem\Repository\LineItemRepository;
+use App\Modules\Product\Domain\Product;
 use App\Modules\Sale\Domain\Sale;
 use App\Shared\Exceptions\NotFoundException;
 
@@ -18,25 +19,27 @@ class LineItemService
 
     public function createLineItem(
         Sale $sale,
-        string $code,
-        string $name,
+        Product $product,
         float $quantity,
-        float $unitPrice,
         float $totalAmount,
         array $labels,
         string $accountCode,
         ?string $gtin = null,
+        string $code = '',
+        string $name = '',
+        float $unitPrice = 0.0,
     ): LineItem {
         $item = LineItem::at(
             $sale,
-            $code,
-            $name,
+            $product,
             $quantity,
-            $unitPrice,
             $totalAmount,
             $labels,
             $accountCode,
             $gtin,
+            $code,
+            $name,
+            $unitPrice,
         );
 
         return $this->repository->saveReturn($item);
@@ -82,14 +85,15 @@ class LineItemService
 
         LineItem::at(
             $item->sale,
-            $newCode,
-            $newName,
+            $item->product,
             $newQuantity,
-            $newUnitPrice,
             $newTotalAmount,
             $newLabels,
             $newAccountCode,
             $newGtin,
+            $newCode,
+            $newName,
+            $newUnitPrice,
         );
 
         $item->code = $newCode;

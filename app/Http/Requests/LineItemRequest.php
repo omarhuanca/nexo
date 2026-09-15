@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class LineItemRequest extends FormRequest
@@ -15,10 +14,8 @@ class LineItemRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code' => 'required|string|max:30',
-            'name' => 'required|string|max:2048',
+            'product_id' => 'required|integer|exists:products,id',
             'quantity' => 'required|numeric|min:0.001|max:999999',
-            'unit_price' => 'required|numeric|min:0|max:999999999.99',
             'total_amount' => 'required|numeric|min:0|max:999999999.99',
             'labels' => 'required|array|min:1',
             'labels.*' => 'required|string|in:A,B,C,D,E,F,G,H',
@@ -30,16 +27,11 @@ class LineItemRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'code.required' => 'The code is required.',
-            'code.max' => 'The code cannot exceed 30 characters.',
-            'name.required' => 'The name is required.',
-            'name.max' => 'The name cannot exceed 2048 characters.',
+            'product_id.required' => 'The product is required.',
+            'product_id.exists' => 'The selected product does not exist.',
             'quantity.required' => 'The quantity is required.',
             'quantity.min' => 'The quantity must be greater than zero.',
             'quantity.max' => 'The quantity cannot exceed 999999.',
-            'unit_price.required' => 'The unit_price is required.',
-            'unit_price.min' => 'The unit_price cannot be negative.',
-            'unit_price.max' => 'The unit_price cannot exceed 999999999.99.',
             'total_amount.required' => 'The total_amount is required.',
             'total_amount.min' => 'The total_amount cannot be negative.',
             'total_amount.max' => 'The total_amount cannot exceed 999999999.99.',

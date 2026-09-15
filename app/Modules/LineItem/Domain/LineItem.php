@@ -2,6 +2,7 @@
 
 namespace App\Modules\LineItem\Domain;
 
+use App\Modules\Product\Domain\Product;
 use App\Modules\Sale\Domain\Sale;
 use App\Shared\Domain\BaseEntity;
 use App\Shared\Exceptions\DomainValidationException;
@@ -60,6 +61,7 @@ class LineItem extends BaseEntity
 
     protected $fillable = [
         'sale_id',
+        'product_id',
         'code',
         'name',
         'quantity',
@@ -91,19 +93,21 @@ class LineItem extends BaseEntity
      */
     public static function at(
         Sale $sale,
-        string $code,
-        string $name,
+        Product $product,
         float $quantity,
-        float $unitPrice,
         float $totalAmount,
         array $labels,
         string $accountCode,
         ?string $gtin = null,
+        string $code = '',
+        string $name = '',
+        float $unitPrice = 0.0,
     ): self {
         $errors = [];
 
-        $code = trim($code);
-        $name = trim($name);
+        $code = $code !== '' ? trim($code) : $product->code;
+        $name = $name !== '' ? trim($name) : $product->name;
+        $unitPrice = $unitPrice > 0 ? $unitPrice : $product->sale_price;
         $accountCode = trim($accountCode);
         $gtin = ($gtin === null || trim($gtin) === '') ? null : trim($gtin);
 
@@ -170,6 +174,7 @@ class LineItem extends BaseEntity
 
         return new self([
             'sale_id' => $sale->id,
+            'product_id' => $product->id,
             'code' => $code,
             'name' => $name,
             'quantity' => $quantity,
@@ -184,5 +189,10 @@ class LineItem extends BaseEntity
     public function sale(): BelongsTo
     {
         return $this->belongsTo(Sale::class);
+    }
+
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
     }
 }
