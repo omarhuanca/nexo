@@ -5,6 +5,8 @@ namespace App\Modules\Integration\Xero\Service;
 use App\Modules\Connector\Repository\ConnectorRepository;
 use App\Modules\Integration\Xero\Domain\XeroConnection;
 use App\Modules\Integration\TaxCore\Service\TaxCoreSaleService;
+use App\Modules\LineItem\Service\LineItemService;
+use App\Modules\Product\Repository\ProductRepository;
 use App\Modules\Sale\Domain\Sale;
 use App\Modules\Sale\Repository\SaleRepository;
 use Illuminate\Http\Request;
@@ -19,6 +21,8 @@ class XeroWebhookService{
         private readonly ConnectorRepository $connectorRepository,
         private readonly SaleRepository $saleRepository,
         private readonly TaxCoreSaleService $taxCoreSaleService,
+        private readonly ProductRepository $productRepository,
+        private readonly LineItemService $lineItemService,
     ){}
     public function isValidSignature(Request $request): bool
     {
@@ -107,6 +111,25 @@ class XeroWebhookService{
         $sale->setAttempts(1);
 
         $sale = $this->saleRepository->saveReturn($sale);
+
+        foreach ($payload['items'] as $rawItem) {
+            $product = $this->productRepository->findByCodeInOrganization(
+                $rawItem['code'] ?? '',
+                $organizationId
+            );
+
+            $this->lineItemService->createLineItem(
+                $sale,
+                $product,
+                (float) ($rawItem['quantity'] ?? 1),
+                (float) ($rawItem['totalAmount'] ?? 0),
+                $rawItem['labels'] ?? [],
+                $rawItem['accountCode'] ?? '',
+                $rawItem['gtin'],
+                $rawItem['code'],
+                $rawItem['name'],
+            );
+        }
 
         $this->taxCoreSaleService->dispatchFiscalization($sale, $this->saleRepository);
     }

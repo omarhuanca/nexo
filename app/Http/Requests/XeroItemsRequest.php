@@ -14,14 +14,8 @@ class XeroItemsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'items' => 'required|array|min:1',
-            'items.*.code' => 'required|string|max:30',
-            'items.*.name' => 'required|string|max:50',
-            'items.*.description' => 'nullable|string|max:4000',
-            'items.*.salePrice' => 'required|numeric|min:0',
-            'items.*.costPrice' => 'required|numeric|min:0',
-            'items.*.salesAccountCode' => 'required|string|max:10',
-            'items.*.purchaseAccountCode' => 'required|string|max:10',
+            'productIds' => 'required|array|min:1',
+            'productIds.*' => 'required|integer|exists:products,id',
         ];
     }
 }

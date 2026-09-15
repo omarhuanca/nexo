@@ -8,6 +8,7 @@ use App\Modules\Buyer\Service\BuyerService;
 use App\Modules\Connector\Domain\Connector;
 use App\Modules\LineItem\Service\LineItemService;
 use App\Modules\Payment\Service\PaymentService;
+use App\Modules\Product\Repository\ProductRepository;
 use App\Modules\Sale\Domain\ListSalesCriteria;
 use App\Modules\Sale\Domain\Sale;
 use App\Modules\Sale\Repository\SaleRepository;
@@ -19,17 +20,20 @@ class SaleService
     private readonly BuyerService $buyerService;
     private readonly LineItemService $lineItemService;
     private readonly PaymentService $paymentService;
+    private readonly ProductRepository $productRepository;
 
     public function __construct(
         SaleRepository $saleRepository,
         BuyerService $buyerService,
         LineItemService $lineItemService,
         PaymentService $paymentService,
+        ProductRepository $productRepository,
     ) {
         $this->saleRepository = $saleRepository;
         $this->buyerService = $buyerService;
         $this->lineItemService = $lineItemService;
         $this->paymentService = $paymentService;
+        $this->productRepository = $productRepository;
     }
 
     public function createSale(Connector $connector, array $payload): Sale
@@ -52,12 +56,15 @@ class SaleService
         $sale->setBuyerId($buyer->getId());
 
         foreach ($payload['items'] as $rawItem) {
+            $product = $this->productRepository->findByCodeInOrganization(
+                $rawItem['code'],
+                $connector->getOrganizationId()
+            );
+
             $this->lineItemService->createLineItem(
                 $sale,
-                $rawItem['code'],
-                $rawItem['name'],
+                $product,
                 (float) $rawItem['quantity'],
-                (float) $rawItem['unitPrice'],
                 (float) $rawItem['totalAmount'],
                 $rawItem['labels'],
                 $rawItem['accountCode'],
