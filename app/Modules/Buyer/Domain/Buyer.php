@@ -2,7 +2,7 @@
 
 namespace App\Modules\Buyer\Domain;
 
-use App\Modules\Organization\Domain\Organization;
+use App\Modules\Sale\Domain\Sale;
 use App\Shared\Domain\BaseEntity;
 use App\Shared\Exceptions\DomainValidationException;
 use App\Shared\Traits\GettersAndSetters;
@@ -10,10 +10,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Buyer catalog entity.
+ * Buyer snapshot.
  *
- * Represents a real-world buyer (customer) belonging to an organization.
- * This is a MUTABLE catalog entry, reusable across multiple sales.
+ * Immutable record of the buyer information a Sale arrived with.
+ * Each Buyer belongs to exactly one Sale and is never reused or
+ * shared across sales.
  *
  * Domain rules:
  *  - name is required, non-empty, max 255 chars
@@ -39,14 +40,9 @@ class Buyer extends BaseEntity
     protected $table = 'buyers';
 
     protected $fillable = [
-        'organization_id',
+        'sale_id',
         'name',
         'document_number',
-        'active',
-    ];
-
-    protected $casts = [
-        'active' => 'boolean',
     ];
 
     protected static function newFactory()
@@ -59,12 +55,11 @@ class Buyer extends BaseEntity
      *
      * @throws DomainValidationException when any domain rule fails.
      */
-    public static function at(Organization $organization, string $name, ?string $documentNumber = null): self
+    public static function at(Sale $sale, string $name, ?string $documentNumber = null): self
     {
         $errors = [];
 
         $name = trim($name);
-        $documentNumberRaw = $documentNumber;
         $documentNumber = ($documentNumber === null || trim($documentNumber) === '') ? null : trim($documentNumber);
 
         if ($name === '') {
@@ -81,20 +76,17 @@ class Buyer extends BaseEntity
             throw new DomainValidationException('Invalid buyer data.', $errors);
         }
 
-        unset($documentNumberRaw);
-
         $buyer = new self();
-        $buyer->organization_id = $organization->getId();
+        $buyer->sale_id = $sale->getId();
         $buyer->name = $name;
         $buyer->document_number = $documentNumber;
-        $buyer->active = true;
 
         return $buyer;
     }
 
-    public function organization(): BelongsTo
+    public function sale(): BelongsTo
     {
-        return $this->belongsTo(Organization::class);
+        return $this->belongsTo(Sale::class);
     }
 
     /**

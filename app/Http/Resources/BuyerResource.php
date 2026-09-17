@@ -11,10 +11,9 @@ class BuyerResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'organization_id' => $this->organization_id,
+            'sale_id' => $this->sale_id,
             'name' => $this->name,
             'document_number' => $this->document_number,
-            'active' => (bool) $this->active,
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

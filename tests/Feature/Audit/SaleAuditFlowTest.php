@@ -4,6 +4,7 @@ namespace Tests\Feature\Audit;
 
 use App\Jobs\ProcessSaleJob;
 use App\Modules\Connector\Service\ConnectorService;
+use App\Modules\Product\Domain\Product;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use PHPUnit\Framework\Attributes\Test;
@@ -31,6 +32,14 @@ class SaleAuditFlowTest extends TestCase
         );
         $this->connectorToken = $connector->plainToken;
         $this->headers = ['Authorization' => "Bearer {$this->connectorToken}"];
+
+        Product::factory()
+            ->forOrganization($organization)
+            ->create([
+                'code' => 'PROD-001',
+                'name' => 'Test Product',
+                'sale_price' => 50.00,
+            ]);
 
         $this->cleanAuditLog();
     }

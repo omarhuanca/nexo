@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Modules\Organization\Domain\Organization;
+use App\Modules\Sale\Domain\Sale;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -15,26 +15,15 @@ class BuyerFactory extends Factory
     public function definition(): array
     {
         return [
-            'organization_id' => Organization::factory(),
+            'sale_id' => Sale::factory(),
             'name' => $this->faker->company(),
             'document_number' => $this->faker->unique()->numerify('########'),
-            'active' => true,
         ];
     }
 
-    public function active(bool $active = true): self
+    public function forSale(Sale $sale): self
     {
-        return $this->state(fn() => ['active' => $active]);
-    }
-
-    public function inactive(): self
-    {
-        return $this->state(fn() => ['active' => false]);
-    }
-
-    public function forOrganization(Organization $organization): self
-    {
-        return $this->state(fn() => ['organization_id' => $organization->getId()]);
+        return $this->state(fn() => ['sale_id' => $sale->getId()]);
     }
 
     public function withoutDocumentNumber(): self

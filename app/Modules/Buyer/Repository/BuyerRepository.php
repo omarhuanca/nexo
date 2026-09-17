@@ -13,32 +13,18 @@ class BuyerRepository extends AbstractRepository
         parent::__construct($model);
     }
 
-    public function findByDocumentNumberForOrganization(string $documentNumber, int $organizationId): ?Buyer
+    public function paginateFiltered(?int $saleId, ?string $name, int $perPage = 15): LengthAwarePaginator
     {
-        return $this->model
-            ->where('organization_id', $organizationId)
-            ->where('document_number', $documentNumber)
-            ->first();
-    }
+        $query = $this->model->newQuery();
 
-    public function paginateByOrganization(int $organizationId, int $perPage = 15): LengthAwarePaginator
-    {
-        return $this->model
-            ->where('organization_id', $organizationId)
-            ->orderBy('name')
-            ->paginate($perPage);
-    }
-
-    public function existsByDocumentNumberInOrganization(string $documentNumber, int $organizationId, ?int $excludeId = null): bool
-    {
-        $query = $this->model
-            ->where('organization_id', $organizationId)
-            ->where('document_number', $documentNumber);
-
-        if ($excludeId !== null) {
-            $query->where('id', '!=', $excludeId);
+        if ($saleId !== null) {
+            $query->where('sale_id', $saleId);
         }
 
-        return $query->exists();
+        if ($name !== null && $name !== '') {
+            $query->where('name', 'ilike', "%{$name}%");
+        }
+
+        return $query->orderBy('name')->paginate($perPage);
     }
 }

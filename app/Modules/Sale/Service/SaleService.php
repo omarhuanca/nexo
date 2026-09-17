@@ -46,14 +46,11 @@ class SaleService
 
         $sale = $this->saleRepository->saveReturn($sale);
 
-        $sale->load('organization');
-
-        $buyer = $this->buyerService->findOrCreateByDocumentNumber(
-            $sale->organization,
+        $this->buyerService->createBuyerFromSale(
+            $sale,
             $payload['buyer']['name'] ?? '',
-            $payload['buyer']['id'],
+            $payload['buyer']['id'] ?? null,
         );
-        $sale->setBuyerId($buyer->getId());
 
         foreach ($payload['items'] as $rawItem) {
             $product = $this->productRepository->findByCodeInOrganization(

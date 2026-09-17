@@ -4,9 +4,12 @@ namespace App\Modules\Product\Controller;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ProductRequest;
+use App\Http\Requests\XeroProductRequest;
 use App\Http\Resources\ProductResource;
 use App\Http\Responses\ApiResponse;
+use App\Modules\Integration\Xero\Service\XeroProductService;
 use App\Modules\Organization\Domain\Organization;
+use App\Modules\Product\Domain\Product;
 use App\Modules\Product\Service\ProductService;
 use App\Shared\Exceptions\BusinessConflictException;
 use App\Shared\Exceptions\DomainValidationException;
@@ -20,10 +23,15 @@ use OpenApi\Attributes as OA;
 )]
 class ProductController extends Controller
 {
-    private ProductService $service;
+    private ProductService $productService;
+    private XeroProductService $xeroProductService;
 
-    public function __construct(ProductService $service) {
-        $this->service = $service;
+    public function __construct(
+        ProductService $productService,
+        XeroProductService $xeroProductService,
+    ) {
+        $this->productService = $productService;
+        $this->xeroProductService = $xeroProductService;
     }
     #[OA\Get(
         path: '/api/products',
@@ -98,7 +106,7 @@ class ProductController extends Controller
             'perPage' => 'sometimes|integer|min:1|max:100',
         ]);
 
-        $products = $this->service->paginateByOrganization(
+        $products = $this->productService->paginateByOrganization(
             (int) $request->query('organization_id'),
             (int) $request->query('perPage', 15),
         );
@@ -143,7 +151,7 @@ class ProductController extends Controller
         );
 
         try {
-            $product = $this->service->createProduct(
+            $product = $this->productService->createProduct(
                 $organization,
                 $request->string('code')->toString(),
                 $request->string('name')->toString(),
@@ -165,6 +173,84 @@ class ProductController extends Controller
         return ApiResponse::created(
             'Product created successfully.',
             new ProductResource($product),
+        );
+    }
+
+    #[OA\Post(
+        path: '/api/products/{productId}/xero',
+        tags: ['Products'],
+        summary: 'Configure Xero account codes for a product',
+        description: 'Creates the Xero account code configuration for one product. A product can only be configured once.',
+        operationId: 'configureProductXero',
+        parameters: [
+            new OA\Parameter(
+                name: 'productId',
+                in: 'path',
+                required: true,
+                description: 'Product ID.',
+                schema: new OA\Schema(type: 'integer', example: 15),
+            ),
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['organization_id', 'sales_account_code', 'purchase_account_code'],
+                properties: [
+                    new OA\Property(
+                        property: 'organization_id',
+                        type: 'integer',
+                        example: 1,
+                        description: 'Organization that owns the product.',
+                    ),
+                    new OA\Property(
+                        property: 'sales_account_code',
+                        type: 'string',
+                        maxLength: 10,
+                        example: '200',
+                    ),
+                    new OA\Property(
+                        property: 'purchase_account_code',
+                        type: 'string',
+                        maxLength: 10,
+                        example: '310',
+                    ),
+                ],
+            ),
+        ),
+        responses: [
+            new OA\Response(response: 201, description: 'Xero product configuration created successfully.'),
+            new OA\Response(response: 404, description: 'Product not found for the organization.'),
+            new OA\Response(response: 409, description: 'The product already has Xero configuration.'),
+            new OA\Response(response: 422, description: 'Validation error.'),
+        ],
+    )]
+    public function configureXero(
+        XeroProductRequest $request,
+        int $productId,
+    ): JsonResponse {
+        $product = Product::query()
+            ->where('id', $productId)
+            ->where('organization_id', $request->integer('organization_id'))
+            ->firstOrFail();
+
+        try {
+            $xeroProduct = $this->xeroProductService->configure(
+                $product,
+                $request->string('sales_account_code')->toString(),
+                $request->string('purchase_account_code')->toString(),
+            );
+        } catch (BusinessConflictException $exception) {
+            return ApiResponse::error($exception->getMessage(), 409);
+        }
+
+        return ApiResponse::created(
+            'Xero product configuration created successfully.',
+            [
+                'product_id' => $xeroProduct->product_id,
+                'xeroConfigured' => true,
+                'salesAccountCode' => $xeroProduct->sales_account_code,
+                'purchaseAccountCode' => $xeroProduct->purchase_account_code,
+            ],
         );
     }
 }

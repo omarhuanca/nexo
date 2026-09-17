@@ -11,8 +11,8 @@ use App\Shared\Domain\BaseEntity;
 use App\Shared\Exceptions\DomainValidationException;
 use App\Shared\Traits\GettersAndSetters;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Sale extends BaseEntity
 {
@@ -60,7 +60,6 @@ class Sale extends BaseEntity
     protected $fillable = [
         'organization_id',
         'connector_id',
-        'buyer_id',
         'status',
         'payload',
         'xero_invoice_id',
@@ -89,9 +88,9 @@ class Sale extends BaseEntity
         return $this->belongsTo(Connector::class);
     }
 
-    public function buyer(): BelongsTo
+    public function buyer(): HasOne
     {
-        return $this->belongsTo(Buyer::class);
+        return $this->hasOne(Buyer::class);
     }
 
     public function lineItems(): HasMany
