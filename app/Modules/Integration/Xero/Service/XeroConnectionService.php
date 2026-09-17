@@ -61,7 +61,12 @@ class XeroConnectionService
         $connection = $this->repository->findActiveByOrganizationId($organizationId);
 
         if (!$connection) throw new NotFoundException("No active Xero connection found for this organization.");
-        
+
         return $connection;
+    }
+
+    public function findActiveByOrganizationOrNull(int $organizationId): ?XeroConnection
+    {
+        return $this->repository->findActiveByOrganizationId($organizationId);
     }
 }

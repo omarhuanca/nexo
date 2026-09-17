@@ -6,7 +6,9 @@ use App\Http\Responses\ApiResponse;
 use App\Modules\Integration\Xero\Service\XeroApiService;
 use App\Modules\Integration\Xero\Service\XeroConnectionService;
 use App\Modules\Integration\Xero\Service\XeroOauthService;
+use App\Shared\Exceptions\BusinessConflictException;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
 
@@ -54,7 +56,7 @@ class XeroController extends Controller
         path: '/api/integrations/xero/callback',
         tags: ['Xero Integration'],
         summary: 'Xero OAuth2 callback',
-        description: 'Handles the redirect from Xero after the user authorizes the app. Exchanges the authorization code for tokens, links the connection to the organization stored in session (set during /connect), and persists the XeroConnection record. This endpoint is called automatically by Xero — do not call it directly.',
+        description: 'Handles the redirect from Xero after the user authorizes the app. Exchanges the authorization code for tokens, links the connection to the organization encoded in the state parameter (set during /connect), persists the XeroConnection record, and redirects the browser back to the frontend integrations page with a `xero` status query parameter (`connected` or `error`). This endpoint is called automatically by Xero — do not call it directly.',
         operationId: 'xeroCallback',
         parameters: [
             new OA\Parameter(name: 'code',in: 'query',required: true,description: 'Authorization code returned by Xero.',schema: new OA\Schema(type: 'string', example: 'abc123def456')),
@@ -62,24 +64,61 @@ class XeroController extends Controller
         ],
         responses: [
             new OA\Response(
+                response: 302,
+                description: 'Redirect to the frontend integrations page, with `?xero=connected` on success or `?xero=error&message=...` on failure.'
+            )
+        ]
+    )]
+    public function callback(Request $request): RedirectResponse
+    {
+        $frontendUrl = config('xero.frontend_callback_url');
+        $state = $request->input('state');
+
+        if (!$state) {
+            return redirect("{$frontendUrl}?xero=error&message=" . urlencode('Invalid OAuth callback: missing state parameter.'));
+        }
+
+        try {
+            $organizationId = $this->xeroOauthService->extractNexoOrganizationIdFromState($state);
+
+            $data = $this->xeroOauthService->xeroCallback($request, $organizationId);
+            $this->xeroConnectionService->saveOrUpdate($data['tokens'], $data['connection'], $organizationId);
+
+            return redirect("{$frontendUrl}?xero=connected");
+        } catch (BusinessConflictException $e) {
+            return redirect("{$frontendUrl}?xero=error&message=" . urlencode($e->getMessage()));
+        } catch (\Throwable $e) {
+            report($e);
+
+            return redirect("{$frontendUrl}?xero=error&message=" . urlencode('Unexpected error connecting to Xero.'));
+        }
+    }
+
+    #[OA\Get(
+        path: '/api/integrations/xero/status',
+        tags: ['Xero Integration'],
+        summary: 'Get Xero connection status for an organization',
+        description: 'Returns whether the given organization currently has an active Xero connection, and a summary of it if so.',
+        operationId: 'xeroStatus',
+        parameters: [
+            new OA\Parameter(name: 'organization_id',in: 'query',required: true,description: 'ID of the organization to check.',schema: new OA\Schema(type: 'integer', example: 1))
+        ],
+        responses: [
+            new OA\Response(
                 response: 200,
-                description: 'Xero connection established and linked to organization successfully.',
+                description: 'Xero connection status for the organization.',
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'success', type: 'boolean', example: true),
-                        new OA\Property(property: 'message', type: 'string', example: 'Connected to Xero successfully'),
+                        new OA\Property(property: 'message', type: 'string', example: 'Active Xero connection found.'),
                         new OA\Property(
                             property: 'data',
                             type: 'object',
                             properties: [
-                                new OA\Property(property: 'id', type: 'integer', example: 1),
-                                new OA\Property(property: 'organization_id', type: 'integer', example: 1, description: 'Organization this connection belongs to.'),
-                                new OA\Property(property: 'tenant_id', type: 'string', format: 'uuid', example: 'b2c3d4e5-f6a7-8901-b2c3-d4e5f6a78901'),
+                                new OA\Property(property: 'connected', type: 'boolean', example: true),
                                 new OA\Property(property: 'tenant_name', type: 'string', example: 'Demo Company (AU)'),
                                 new OA\Property(property: 'tenant_type', type: 'string', example: 'ORGANISATION'),
-                                new OA\Property(property: 'expires_at', type: 'string', format: 'date-time', example: '2026-05-25T13:00:00.000000Z'),
-                                new OA\Property(property: 'scopes', type: 'string', example: 'openid email profile offline_access accounting.settings accounting.transactions accounting.contacts'),
-                                new OA\Property(property: 'active', type: 'boolean', example: true)
+                                new OA\Property(property: 'expires_at', type: 'string', format: 'date-time', example: '2026-05-25T13:00:00.000000Z')
                             ]
                         )
                     ]
@@ -87,30 +126,30 @@ class XeroController extends Controller
             ),
             new OA\Response(
                 response: 422,
-                description: 'Invalid OAuth callback — missing or malformed state parameter, or invalid authorization code.',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'success', type: 'boolean', example: false),
-                        new OA\Property(property: 'message', type: 'string', example: 'Invalid OAuth callback: missing state parameter.')
-                    ]
-                )
+                description: 'Validation error — organization_id missing or not found.'
             )
         ]
     )]
-    public function callback(Request $request): JsonResponse
+    public function status(Request $request): JsonResponse
     {
-        $state = $request->input('state');
+        $request->validate(['organization_id' => 'required|integer|exists:organizations,id']);
 
-        if (!$state) {
-            return ApiResponse::error('Invalid OAuth callback: missing state parameter.', 422);
+        $connection = $this->xeroConnectionService->findActiveByOrganizationOrNull(
+            $request->integer('organization_id')
+        );
+
+        if (!$connection) {
+            return ApiResponse::success('No active Xero connection for this organization.', 200, [
+                'connected' => false,
+            ]);
         }
 
-        $organizationId = $this->xeroOauthService->extractNexoOrganizationIdFromState($state);
-
-        $data = $this->xeroOauthService->xeroCallback($request, $organizationId);
-        $connection = $this->xeroConnectionService->saveOrUpdate($data['tokens'], $data['connection'], $organizationId);
-
-        return ApiResponse::success("Connected to Xero successfully", 200, $connection);
+        return ApiResponse::success('Active Xero connection found.', 200, [
+            'connected' => true,
+            'tenant_name' => $connection->getTenantName(),
+            'tenant_type' => $connection->getTenantType(),
+            'expires_at' => $connection->getExpiresAt(),
+        ]);
     }
 
     #[OA\Get(
