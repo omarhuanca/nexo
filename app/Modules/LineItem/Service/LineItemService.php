@@ -20,7 +20,7 @@ class LineItemService
     public function createLineItem(
         Sale $sale,
         Product $product,
-        float $quantity,
+        int $quantity,
         float $totalAmount,
         array $labels,
         string $accountCode,
@@ -58,7 +58,7 @@ class LineItemService
             : $item->name;
 
         $newQuantity = array_key_exists('quantity', $data)
-            ? (float) $data['quantity']
+            ? (int) $data['quantity']
             : $item->quantity;
 
         $newUnitPrice = array_key_exists('unit_price', $data)

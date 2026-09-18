@@ -33,7 +33,7 @@ class XeroInvoiceMappingService
             'items' => array_map(fn(array $item) => [
                 'code' => $item['ItemCode'],
                 'name' => $item['Description'] ?? $item['Item']['Name'] ?? 'Item',
-                'quantity' => (float) ($item['Quantity'] ?? 1),
+                'quantity' => (int) ($item['Quantity'] ?? 1),
                 'unitPrice' => (float) ($item['UnitAmount'] ?? 0),
                 'totalAmount' => (float) ($item['LineAmount'] ?? 0),
                 'labels' => [config('taxcore.default_vat_label')],

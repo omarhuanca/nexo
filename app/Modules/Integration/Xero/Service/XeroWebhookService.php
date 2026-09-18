@@ -121,7 +121,7 @@ class XeroWebhookService{
             $this->lineItemService->createLineItem(
                 $sale,
                 $product,
-                (float) ($rawItem['quantity'] ?? 1),
+                (int) ($rawItem['quantity'] ?? 1),
                 (float) ($rawItem['totalAmount'] ?? 0),
                 $rawItem['labels'] ?? [],
                 $rawItem['accountCode'] ?? '',

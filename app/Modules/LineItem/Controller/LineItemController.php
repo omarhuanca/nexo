@@ -73,7 +73,7 @@ class LineItemController extends Controller
                 required: ['product_id', 'quantity', 'total_amount', 'labels', 'account_code'],
                 properties: [
                     new OA\Property(property: 'product_id', type: 'integer', example: 1),
-                    new OA\Property(property: 'quantity', type: 'number', format: 'float', example: 2),
+                    new OA\Property(property: 'quantity', type: 'integer', example: 2),
                     new OA\Property(property: 'total_amount', type: 'number', format: 'float', example: 100.00),
                     new OA\Property(property: 'labels', type: 'array', minItems: 1, items: new OA\Items(type: 'string', example: 'A')),
                     new OA\Property(property: 'account_code', type: 'string', maxLength: 10, example: '200'),
@@ -99,7 +99,7 @@ class LineItemController extends Controller
             $item = $this->service->createLineItem(
                 $sale,
                 $product,
-                (float) $request->input('quantity'),
+                (int) $request->input('quantity'),
                 (float) $request->input('total_amount'),
                 (array) $request->input('labels'),
                 $request->input('account_code'),
@@ -154,7 +154,7 @@ class LineItemController extends Controller
                 properties: [
                     new OA\Property(property: 'code', type: 'string', maxLength: 30),
                     new OA\Property(property: 'name', type: 'string', maxLength: 2048),
-                    new OA\Property(property: 'quantity', type: 'number', format: 'float'),
+                    new OA\Property(property: 'quantity', type: 'integer'),
                     new OA\Property(property: 'unitPrice', type: 'number', format: 'float'),
                     new OA\Property(property: 'totalAmount', type: 'number', format: 'float'),
                     new OA\Property(property: 'labels', type: 'array', items: new OA\Items(type: 'string')),
@@ -174,7 +174,7 @@ class LineItemController extends Controller
         $request->validate([
             'code' => 'sometimes|string|max:30',
             'name' => 'sometimes|string|max:2048',
-            'quantity' => 'sometimes|numeric|min:0.001|max:999999',
+            'quantity' => 'sometimes|integer|min:1|max:999999',
             'unit_price' => 'sometimes|numeric|min:0|max:999999999.99',
             'total_amount' => 'sometimes|numeric|min:0|max:999999999.99',
             'labels' => 'sometimes|array|min:1',

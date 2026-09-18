@@ -61,7 +61,7 @@ class SaleService
             $this->lineItemService->createLineItem(
                 $sale,
                 $product,
-                (float) $rawItem['quantity'],
+                (int) $rawItem['quantity'],
                 (float) $rawItem['totalAmount'],
                 $rawItem['labels'],
                 $rawItem['accountCode'],
