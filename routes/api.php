@@ -35,15 +35,13 @@ Route::delete('/connectors/{id}', [ConnectorController::class, 'destroy']);
 // BUYERS ROUTES
 
 Route::get('/buyers', [BuyerController::class, 'index']);
-Route::post('/buyers', [BuyerController::class, 'store']);
 Route::get('/buyers/{id}', [BuyerController::class, 'show']);
-Route::put('/buyers/{id}', [BuyerController::class, 'update']);
-Route::delete('/buyers/{id}', [BuyerController::class, 'destroy']);
 
 // PRODUCTS ROUTES
 
 Route::get('/products', [ProductController::class, 'index']);
 Route::post('/products', [ProductController::class, 'store']);
+Route::post('/products/{productId}/xero', [ProductController::class, 'configureXero']);
 
 // PAYMENTS ROUTES
 

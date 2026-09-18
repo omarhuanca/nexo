@@ -11,7 +11,19 @@ class LoggerService
     public function audit(string $level, string $message, array $context = []): void
     {
         $sanitized = $this->sanitize($context);
-        Log::channel(self::CHANNEL_AUDIT)->{$level}($message, $sanitized);
+
+        try {
+            Log::channel(self::CHANNEL_AUDIT)->{$level}($message, $sanitized);
+        } catch (\Throwable $exception) {
+            Log::channel('single')->warning(
+                'Audit log could not be written; request processing continued.',
+                [
+                    'audit_message' => $message,
+                    'audit_context' => $sanitized,
+                    'audit_error' => $exception->getMessage(),
+                ],
+            );
+        }
     }
 
     public function info(string $message, array $context = []): void

@@ -18,6 +18,7 @@ class ProductRepository extends AbstractRepository
         int $perPage = 15,
     ): LengthAwarePaginator {
         return $this->model
+            ->with('xeroProduct')
             ->where('organization_id', $organizationId)
             ->orderBy('name')
             ->paginate($perPage);

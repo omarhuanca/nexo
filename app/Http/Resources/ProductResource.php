@@ -17,6 +17,9 @@ class ProductResource extends JsonResource
             'description' => $this->description,
             'salePrice' => $this->sale_price,
             'costPrice' => $this->cost_price,
+            'xeroConfigured' => $this->xeroProduct !== null,
+            'salesAccountCode' => $this->xeroProduct?->sales_account_code ?? '',
+            'purchaseAccountCode' => $this->xeroProduct?->purchase_account_code ?? '',
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];
