@@ -14,7 +14,7 @@ class LineItemResource extends JsonResource
             'sale_id' => $this->sale_id,
             'code' => $this->code,
             'name' => $this->name,
-            'quantity' => (float) $this->quantity,
+            'quantity' => (int) $this->quantity,
             'unit_price' => (float) $this->unit_price,
             'total_amount' => (float) $this->total_amount,
             'labels' => $this->labels,

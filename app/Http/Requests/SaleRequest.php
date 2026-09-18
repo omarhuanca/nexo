@@ -31,7 +31,7 @@ class SaleRequest extends FormRequest
             'items' => 'required|array|min:1',
             'items.*.code' => 'required|string|max:30',
             'items.*.name' => 'required|string|max:2048',
-            'items.*.quantity' => 'required|numeric|min:0.001',
+            'items.*.quantity' => 'required|integer|min:1',
             'items.*.unitPrice' => 'required|numeric',
             'items.*.totalAmount' => 'required|numeric',
             'items.*.labels' => 'required|array|min:1',

@@ -16,7 +16,7 @@ class LineItemFactory extends Factory
 
     public function definition(): array
     {
-        $quantity = $this->faker->randomFloat(4, 1, 100);
+        $quantity = $this->faker->numberBetween(1, 100);
         $unitPrice = $this->faker->randomFloat(4, 10, 500);
         $org = Organization::factory()->create();
         $product = Product::factory()->forOrganization($org)->create();

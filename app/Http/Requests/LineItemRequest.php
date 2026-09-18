@@ -15,7 +15,7 @@ class LineItemRequest extends FormRequest
     {
         return [
             'product_id' => 'required|integer|exists:products,id',
-            'quantity' => 'required|numeric|min:0.001|max:999999',
+            'quantity' => 'required|integer|min:1|max:999999',
             'total_amount' => 'required|numeric|min:0|max:999999999.99',
             'labels' => 'required|array|min:1',
             'labels.*' => 'required|string|in:A,B,C,D,E,F,G,H',
@@ -30,7 +30,8 @@ class LineItemRequest extends FormRequest
             'product_id.required' => 'The product is required.',
             'product_id.exists' => 'The selected product does not exist.',
             'quantity.required' => 'The quantity is required.',
-            'quantity.min' => 'The quantity must be greater than zero.',
+            'quantity.integer' => 'The quantity must be a whole number.',
+            'quantity.min' => 'The quantity must be at least 1.',
             'quantity.max' => 'The quantity cannot exceed 999999.',
             'total_amount.required' => 'The total_amount is required.',
             'total_amount.min' => 'The total_amount cannot be negative.',

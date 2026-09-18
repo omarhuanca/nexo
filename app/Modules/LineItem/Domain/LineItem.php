@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * Domain rules:
  *  - code, name and accountCode must be non-empty (trimmed)
- *  - quantity must be positive and bounded
+ *  - quantity must be a positive whole number, bounded by MAX_QUANTITY
  *  - unit_price and total_amount must be non-negative and bounded
  *  - quantity * unit_price must approximately equal total_amount (tolerance 0.01)
  *  - labels must contain at least one valid fiscal label (A-H)
@@ -73,7 +73,7 @@ class LineItem extends BaseEntity
     ];
 
     protected $casts = [
-        'quantity' => 'float',
+        'quantity' => 'integer',
         'unit_price' => 'float',
         'total_amount' => 'float',
         'labels' => 'array',
@@ -94,7 +94,7 @@ class LineItem extends BaseEntity
     public static function at(
         Sale $sale,
         Product $product,
-        float $quantity,
+        int $quantity,
         float $totalAmount,
         array $labels,
         string $accountCode,
