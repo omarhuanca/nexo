@@ -19,7 +19,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['http://localhost:8000', 'https://backendnexo.shop', 'https://nexo-ui.vercel.app'],
+    'allowed_origins' => ['http://localhost:8000', 'http://localhost:5173', 'https://backendnexo.shop', 'https://nexo-ui.vercel.app'],
 
     'allowed_origins_patterns' => [],
 

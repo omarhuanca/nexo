@@ -31,9 +31,9 @@ class XeroOauthService
     }
     
 
-    public function getAuthorizationUrl(int $nexoOrganizationId): string
+    public function getAuthorizationUrl(int $nexoOrganizationId, ?string $mode = null): string
     {
-        $state = $this->buildState($nexoOrganizationId);
+        $state = $this->buildState($nexoOrganizationId, $mode);
 
         return $this->provider->getAuthorizationUrl([
             'scope' => config('xero.scopes'),
@@ -41,7 +41,7 @@ class XeroOauthService
         ]);
     }
 
-    public function extractNexoOrganizationIdFromState(string $state): int
+    public function decodeState(string $state): array
     {
         if (!str_contains($state, '.')) {
             throw new BusinessConflictException('Invalid OAuth state format.');
@@ -61,13 +61,17 @@ class XeroOauthService
             throw new BusinessConflictException('Invalid OAuth state: missing organization context.');
         }
 
-        return (int) $data['nexo_organization_id'];
+        return [
+            'organization_id' => (int) $data['nexo_organization_id'],
+            'mode' => $data['mode'] ?? null,
+        ];
     }
 
-    private function buildState(int $nexoOrganizationId): string
+    private function buildState(int $nexoOrganizationId, ?string $mode = null): string
     {
         $payload   = base64_encode(json_encode([
             'nexo_organization_id' => $nexoOrganizationId,
+            'mode' => $mode,
             'nonce' => Str::random(16),
         ]));
         $signature = hash_hmac('sha256', $payload, config('app.key'));
@@ -140,5 +144,19 @@ class XeroOauthService
         
         $this->repository->save($connection);
         return $connection;
+    }
+
+    public function revokeToken(string $refreshToken): void
+    {
+        $response = HttpClientHelper::http()->asForm()->post(
+            'https://identity.xero.com/connect/revocation',
+            [
+                'client_id' => config('xero.client_id'),
+                'client_secret' => config('xero.client_secret'),
+                'token' => $refreshToken,
+            ]
+        );
+
+        if (!$response->successful()) throw new BusinessConflictException('Failed to revoke Xero token: ' . $response->body());
     }
 }

@@ -64,6 +64,8 @@ Route::middleware('connector.auth')->group(function () {
 
 Route::get('/integrations/xero/connect', [XeroController::class, 'connect']);
 Route::get('/integrations/xero/callback', [XeroController::class, 'callback']);
+Route::get('/integrations/xero/status', [XeroController::class, 'status']);
+Route::delete('/integrations/xero/disconnect', [XeroController::class, 'disconnect']);
 
 Route::get('/integrations/xero/{connectionId}/contacts', [XeroController::class, 'getContacts']);
 

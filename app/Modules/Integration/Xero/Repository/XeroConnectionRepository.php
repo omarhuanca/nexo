@@ -22,6 +22,7 @@ class XeroConnectionRepository extends AbstractRepository
         return $this->model
             ->where('organization_id', $organizationId)
             ->where('active', true)
+            ->orderByDesc('id')
             ->first();
     }
 }

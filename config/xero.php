@@ -5,6 +5,7 @@ return [
     'client_secret' => env('XERO_CLIENT_SECRET'),
     'redirect_uri'=> env('XERO_REDIRECT_URI'),
     'webhook_key' => env('XERO_WEBHOOK_KEY'),
+    'frontend_callback_url' => rtrim(env('FRONTEND_URL', 'http://localhost:5173'), '/') . '/settings/integrations',
     'scopes' => env(
         'XERO_SCOPES',
         'openid email profile offline_access accounting.settings accounting.transactions accounting.contacts'
