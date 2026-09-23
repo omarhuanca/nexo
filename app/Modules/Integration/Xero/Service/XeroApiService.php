@@ -68,6 +68,27 @@ class XeroApiService
         return $response;
     }
 
+    public function putRaw(XeroConnection $connection, string $endpoint, string $content, string $contentType): Response
+    {
+        $connection = $this->refreshIfNeeded($connection);
+
+        $startedAt = (int) (microtime(true) * 1000);
+
+        $response = HttpClientHelper::http()->withToken($connection->getAccessToken())
+            ->withHeaders([
+                'Xero-tenant-id' => $connection->getTenantId(),
+                "Accept" => "application/json",
+            ])
+            ->withBody($content, $contentType)
+            ->put('https://api.xero.com/api.xro/2.0/' . $endpoint);
+
+        $durationMs = (int) (microtime(true) * 1000) - $startedAt;
+        event(new XeroApiCall('PUT', $endpoint, $response->status(), $durationMs, $connection->getTenantId()));
+
+        ErrorResponseHelper::handleErrors($response);
+        return $response;
+    }
+
     public function refreshIfNeeded(XeroConnection $connection): XeroConnection
     {
         if (now()->greaterThanOrEqualTo($connection->getExpiresAt())) {

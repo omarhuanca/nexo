@@ -8,6 +8,7 @@ use App\Modules\Integration\TaxCore\Service\TaxCoreSaleService;
 use App\Modules\Integration\Xero\Service\XeroConnectionService;
 use App\Modules\Integration\Xero\Service\XeroInvoiceSaleService;
 use App\Modules\Sale\Repository\SaleRepository;
+use App\Modules\Sale\Service\SaleCallbackService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -38,6 +39,7 @@ class ProcessSaleJob implements ShouldQueue
         XeroConnectionService $xeroConnectionService,
         XeroInvoiceSaleService $xeroInvoiceSaleService,
         TaxCoreSaleService $taxCoreSaleService,
+        SaleCallbackService $saleCallbackService,
     ): void {
         $sale = $saleRepository->findByIdWithLock($this->saleId);
 
@@ -65,6 +67,8 @@ class ProcessSaleJob implements ShouldQueue
             $attempt,
         ));
 
+        $saleCallbackService->notify($sale, SaleCallbackService::EVENT_PROCESSING);
+
         $organizationId = $sale->getOrganizationId();
 
         if ($sale->getXeroInvoiceId() === null) {
@@ -84,6 +88,8 @@ class ProcessSaleJob implements ShouldQueue
                     $xeroInvoiceId,
                     (string) $invoiceNumber,
                 ));
+
+                $saleCallbackService->notify($sale, SaleCallbackService::EVENT_XERO_INVOICE_CREATED);
             }
         }
 
@@ -109,6 +115,8 @@ class ProcessSaleJob implements ShouldQueue
                 $exception->getMessage(),
                 $sale->getAttempts(),
             ));
+
+            app(SaleCallbackService::class)->notify($sale, SaleCallbackService::EVENT_FAILED);
         }
     }
 }

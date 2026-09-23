@@ -83,6 +83,7 @@ Route::post('/agent/token', [AgentController::class, 'createToken']);
 
 Route::middleware('agent.auth')->group(function () {
     Route::get('/agent/config',             [AgentController::class, 'config']);
+    Route::post('/agent/ping',              [AgentController::class, 'ping']);
     Route::get('/agent/pending',            [AgentController::class, 'pending']);
     Route::post('/agent/result',            [AgentController::class, 'result']);
     Route::post('/agent/broadcasting-auth', [AgentController::class, 'broadcastingAuth']);

@@ -10,7 +10,17 @@ class XeroInvoiceMappingService
 
     public function mapToSalePayload(XeroConnection $connection, array $invoice): array
     {
-        $lineItems = $invoice['LineItems'] ?? [];
+        // Description-only lines (no item, no amount) are notes, not fiscal items.
+        $lineItems = array_values(array_filter(
+            $invoice['LineItems'] ?? [],
+            fn (array $item) => !empty($item['ItemCode']) || (float) ($item['LineAmount'] ?? 0) != 0.0,
+        ));
+
+        foreach ($lineItems as $item) {
+            if (empty($item['ItemCode'])) {
+                throw new InvalidArgumentException('Xero invoice has a priced line without ItemCode: ' . ($item['Description'] ?? '?'));
+            }
+        }
 
         if (empty($lineItems)) {
             throw new InvalidArgumentException('Xero invoice has no LineItems.');

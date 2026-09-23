@@ -15,6 +15,7 @@ class Connector extends BaseEntity
     protected $table = 'connectors';
 
     public ?string $plainToken = null;
+    public ?string $plainCallbackSecret = null;
 
     protected static function newFactory()
     {
@@ -27,12 +28,20 @@ class Connector extends BaseEntity
         'token',
         'active',
         'allowed_events',
+        'callback_url',
+        'callback_secret',
         'last_used_at',
+    ];
+
+    protected $hidden = [
+        'token',
+        'callback_secret',
     ];
 
     protected $casts = [
         'active' => 'boolean',
         'allowed_events' => 'array',
+        'callback_secret' => 'encrypted',
         'last_used_at' => 'datetime',
     ];
 
@@ -44,6 +53,20 @@ class Connector extends BaseEntity
     public function integrationEvents(): HasMany
     {
         return $this->hasMany(IntegrationEvent::class, 'connector_id');
+    }
+
+    public function hasCallback(): bool
+    {
+        return $this->active && !empty($this->callback_url) && !empty($this->callback_secret);
+    }
+
+    public function generateCallbackSecret(): string
+    {
+        $plain = 'whsec_' . bin2hex(random_bytes(32));
+        $this->callback_secret = $plain;
+        $this->plainCallbackSecret = $plain;
+
+        return $plain;
     }
 
     public function canSendEvent(string $eventType): bool

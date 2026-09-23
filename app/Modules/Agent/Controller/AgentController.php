@@ -2,13 +2,17 @@
 
 namespace App\Modules\Agent\Controller;
 
+use App\Events\Sale\SaleCompleted;
+use App\Events\Sale\SaleFailed;
 use App\Http\Controllers\Controller;
+use App\Jobs\SyncXeroFiscalReferenceJob;
 use App\Http\Responses\ApiResponse;
 use App\Modules\Agent\Domain\AgentToken;
 use App\Modules\Agent\Service\AgentTokenService;
 use App\Modules\Integration\TaxCore\Service\TaxCoreSaleService;
 use App\Modules\Sale\Domain\Sale;
 use App\Modules\Sale\Repository\SaleRepository;
+use App\Modules\Sale\Service\SaleCallbackService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -30,6 +34,7 @@ class AgentController extends Controller
         private readonly AgentTokenService $agentTokenService,
         private readonly SaleRepository $saleRepository,
         private readonly TaxCoreSaleService $taxCoreSaleService,
+        private readonly SaleCallbackService $saleCallbackService,
     ) {}
 
     #[OA\Post(
@@ -211,7 +216,7 @@ class AgentController extends Controller
                 'sale_id' => $sale->id,
                 'method' => 'POST',
                 'endpoint' => '/api/v3/invoices',
-                'payload' => $this->taxCoreSaleService->buildPayload($sale->getPayload()),
+                'payload' => $this->taxCoreSaleService->buildPayload($sale),
             ];
         }, $sales);
 
@@ -289,6 +294,30 @@ class AgentController extends Controller
         }
 
         $this->saleRepository->save($sale);
+
+        if ($validated['ok']) {
+            event(new SaleCompleted(
+                $sale->getId(),
+                $sale->getOrganizationId(),
+                $sale->getConnectorId(),
+                $sale->getXeroInvoiceId(),
+                $sale->getFiscalNumber(),
+                (int) $sale->created_at->diffInMilliseconds(now()),
+            ));
+
+            $this->saleCallbackService->notify($sale, SaleCallbackService::EVENT_COMPLETED);
+            SyncXeroFiscalReferenceJob::dispatch($sale->getId());
+        } else {
+            event(new SaleFailed(
+                $sale->getId(),
+                $sale->getOrganizationId(),
+                $sale->getConnectorId(),
+                $sale->getErrorMessage(),
+                (int) $sale->getAttempts(),
+            ));
+
+            $this->saleCallbackService->notify($sale, SaleCallbackService::EVENT_FAILED);
+        }
 
         return ApiResponse::success('Result recorded');
     }

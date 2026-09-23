@@ -139,6 +139,7 @@ class ConnectorController extends Controller
                     new OA\Property(property: 'organization_id', type: 'integer', description: 'ID of the organization this connector belongs to.', example: 1),
                     new OA\Property(property: 'name', type: 'string', minLength: 3, maxLength: 255, description: 'Unique name within the organization.', example: 'POS System'),
                     new OA\Property(property: 'allowed_events',type: 'array',nullable: true,description: 'List of event types this connector is allowed to send. Null means all events are allowed.',items: new OA\Items(type: 'string', example: 'invoice.created')),
+                    new OA\Property(property: 'callback_url', type: 'string', format: 'uri', nullable: true, maxLength: 2048, description: 'Public HTTPS URL that receives signed sale status webhooks. A callback_secret is generated and returned once when first set.', example: 'https://app.example.com/webhooks/nexo'),
                     new OA\Property(property: 'active', type: 'boolean', description: 'Whether the connector is active. Defaults to true.', example: true),
                 ]
             )
@@ -162,6 +163,8 @@ class ConnectorController extends Controller
                                 new OA\Property(property: 'allowed_events',type: 'array',nullable: true,items: new OA\Items(type: 'string', example: 'invoice.created')),
                                 new OA\Property(property: 'last_used_at', type: 'string', nullable: true, example: null),
                                 new OA\Property(property: 'token', type: 'string', description: 'Bearer token — only visible at creation.', example: 'a3f1c2e4d5b6a7f8c9e0d1b2a3f4c5e6'),
+                                new OA\Property(property: 'callback_url', type: 'string', nullable: true, example: 'https://app.example.com/webhooks/nexo'),
+                                new OA\Property(property: 'callback_secret', type: 'string', description: 'HMAC secret for verifying callbacks — only visible when generated.', example: 'whsec_9f2c...'),
                                 new OA\Property(property: 'created_at', type: 'string', format: 'date-time', example: '2026-05-19T08:00:00.000000Z'),
                             ]
                         ),
@@ -213,12 +216,13 @@ class ConnectorController extends Controller
     )]
     public function store(CreateConnectorRequest $request): JsonResponse
     {
-        $data = $request->safe()->only(['organization_id', 'name', 'allowed_events', 'active']);
+        $data = $request->safe()->only(['organization_id', 'name', 'allowed_events', 'active', 'callback_url']);
         $connector = $this->connectorService->createConnector(
             (int) $data['organization_id'],
             $data['name'],
             $data['allowed_events'] ?? [],
-            $data['active'] ?? true
+            $data['active'] ?? true,
+            $data['callback_url'] ?? null,
         );
 
         return ApiResponse::created(
@@ -314,7 +318,9 @@ class ConnectorController extends Controller
                 properties: [
                     new OA\Property(property: 'name',type: 'string',minLength: 3,maxLength: 255,description: 'New name. Must be unique within the organization.',example: 'Updated POS System'),
                     new OA\Property(property: 'allowed_events',type: 'array',nullable: true,description: 'Updated list of allowed event types. Send null to allow all events.',items: new OA\Items(type: 'string', example: 'invoice.created')),
-                    new OA\Property(property: 'active',type: 'boolean',description: 'Whether the connector is active.',example: true)
+                    new OA\Property(property: 'active',type: 'boolean',description: 'Whether the connector is active.',example: true),
+                    new OA\Property(property: 'callback_url', type: 'string', format: 'uri', nullable: true, maxLength: 2048, description: 'Public HTTPS URL that receives signed sale status webhooks. A callback_secret is generated and returned once when first set.', example: 'https://app.example.com/webhooks/nexo'),
+                    new OA\Property(property: 'rotate_callback_secret', type: 'boolean', description: 'Generate a new callback_secret (returned once in this response).', example: false),
                 ]
             )
         ),
@@ -396,7 +402,7 @@ class ConnectorController extends Controller
     )]
     public function update(int $id, UpdateConnectorRequest $request): JsonResponse
     {
-        $data      = $request->safe()->only(['name', 'allowed_events', 'active']);
+        $data      = $request->safe()->only(['name', 'allowed_events', 'active', 'callback_url', 'rotate_callback_secret']);
         $connector = $this->connectorService->updateConnector($id, $data);
 
         return ApiResponse::success(

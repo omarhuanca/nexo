@@ -37,4 +37,44 @@ class XeroInvoiceSaleService
 
         return $response->json();
     }
+
+    /**
+     * Writes the TaxCore fiscal number into the invoice Reference and attaches the
+     * verification URL (and QR image, when V-SDC returned one) so it is visible online.
+     */
+    public function applyFiscalReference(XeroConnection $connection, Sale $sale): void
+    {
+        $invoiceId = $sale->getXeroInvoiceId();
+        $fiscalNumber = (string) $sale->getFiscalNumber();
+        $fiscal = is_array($sale->getFiscalResult()) ? $sale->getFiscalResult() : [];
+
+        $this->apiService->post($connection, "Invoices/{$invoiceId}", [
+            'InvoiceID' => $invoiceId,
+            'Reference' => $fiscalNumber,
+        ]);
+
+        $baseName = 'fiscal-' . preg_replace('/[^A-Za-z0-9_-]/', '_', $fiscalNumber);
+        $verificationUrl = $fiscal['verificationUrl'] ?? null;
+
+        if ($verificationUrl) {
+            $content = "Fiscal invoice number: {$fiscalNumber}\r\nVerification URL: {$verificationUrl}\r\n";
+            $this->apiService->putRaw(
+                $connection,
+                "Invoices/{$invoiceId}/Attachments/{$baseName}.txt?IncludeOnline=true",
+                $content,
+                'text/plain',
+            );
+        }
+
+        $qr = !empty($fiscal['verificationQRCode']) ? base64_decode($fiscal['verificationQRCode'], true) : false;
+
+        if ($qr !== false) {
+            $this->apiService->putRaw(
+                $connection,
+                "Invoices/{$invoiceId}/Attachments/{$baseName}-qr.gif?IncludeOnline=true",
+                $qr,
+                'image/gif',
+            );
+        }
+    }
 }
