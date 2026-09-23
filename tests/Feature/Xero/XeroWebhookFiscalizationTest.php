@@ -5,6 +5,7 @@ namespace Tests\Feature\Xero;
 use App\Events\FiscalizationRequested;
 use App\Jobs\ProcessXeroWebhookEventJob;
 use App\Modules\Integration\Xero\Domain\XeroConnection;
+use App\Modules\Product\Domain\Product;
 use App\Modules\Sale\Domain\Sale;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
@@ -73,6 +74,17 @@ class XeroWebhookFiscalizationTest extends TestCase
         $this->assertSame(['A'], $sale->getPayload()['items'][0]['labels']);
         $this->assertEquals(120.0, $sale->getPayload()['items'][0]['totalAmount']);
 
+        $product = Product::where('organization_id', $organization->getId())->where('code', 'PROD1')->first();
+        $this->assertNotNull($product, 'Unknown Xero item must be added to the catalog');
+        $this->assertEquals(30.0, $product->sale_price);
+
+        $this->assertSame('101234567', $sale->buyer->document_number);
+        $this->assertCount(1, $sale->lineItems);
+        $this->assertSame($product->id, $sale->lineItems[0]->product_id);
+        $this->assertEquals(30.0, $sale->lineItems[0]->unit_price);
+        $this->assertCount(1, $sale->payments);
+        $this->assertEquals(140.0, $sale->payments[0]->amount);
+
         Event::assertDispatched(FiscalizationRequested::class, fn ($event) => $event->saleId === $sale->id
             && $event->organizationId === $organization->getId()
         );
@@ -105,6 +117,77 @@ class XeroWebhookFiscalizationTest extends TestCase
         $this->assertDatabaseCount('sales', 1);
 
         Event::assertNotDispatched(FiscalizationRequested::class);
+    }
+
+    #[Test]
+    public function existing_catalog_product_is_reused_and_xero_price_wins(): void
+    {
+        Event::fake([FiscalizationRequested::class]);
+
+        $organization = $this->createOrganization();
+        $this->createConnector($organization, ['active' => true]);
+        $this->createXeroConnection($organization->getId(), 'tenant-6');
+        $product = Product::factory()->forOrganization($organization)->create(['code' => 'PROD1', 'sale_price' => 99.0]);
+
+        Http::fake([
+            'api.xero.com/api.xro/2.0/Invoices/xero-inv-6' => Http::response($this->invoicePayload('xero-inv-6', 'AUTHORISED'), 200),
+            'api.xero.com/api.xro/2.0/Contacts/*' => Http::response(['Contacts' => [['TaxNumber' => null]]], 200),
+        ]);
+
+        $this->postSignedWebhook($this->webhookBody('xero-inv-6', 'tenant-6'))->assertStatus(200);
+
+        $this->assertSame(1, Product::where('organization_id', $organization->getId())->count());
+        $line = Sale::first()->lineItems[0];
+        $this->assertSame($product->id, $line->product_id);
+        $this->assertEquals(30.0, $line->unit_price);
+    }
+
+    #[Test]
+    public function invalid_line_leaves_no_half_built_sale(): void
+    {
+        Event::fake([FiscalizationRequested::class]);
+
+        $organization = $this->createOrganization();
+        $this->createConnector($organization, ['active' => true]);
+        $this->createXeroConnection($organization->getId(), 'tenant-7');
+
+        $invoice = $this->invoicePayload('xero-inv-7', 'AUTHORISED');
+        $invoice['Invoices'][0]['LineItems'][0]['AccountCode'] = '';
+
+        Http::fake([
+            'api.xero.com/api.xro/2.0/Invoices/xero-inv-7' => Http::response($invoice, 200),
+            'api.xero.com/api.xro/2.0/Contacts/*' => Http::response(['Contacts' => [['TaxNumber' => null]]], 200),
+        ]);
+
+        $this->postSignedWebhook($this->webhookBody('xero-inv-7', 'tenant-7'))->assertStatus(200);
+
+        $this->assertDatabaseCount('sales', 0);
+        $this->assertDatabaseCount('buyers', 0);
+        $this->assertDatabaseCount('products', 0);
+        Event::assertNotDispatched(FiscalizationRequested::class);
+    }
+
+    #[Test]
+    public function description_only_lines_are_ignored(): void
+    {
+        Event::fake([FiscalizationRequested::class]);
+
+        $organization = $this->createOrganization();
+        $this->createConnector($organization, ['active' => true]);
+        $this->createXeroConnection($organization->getId(), 'tenant-8');
+
+        $invoice = $this->invoicePayload('xero-inv-8', 'AUTHORISED');
+        $invoice['Invoices'][0]['LineItems'][] = ['Description' => 'Gracias por su compra', 'LineAmount' => 0];
+
+        Http::fake([
+            'api.xero.com/api.xro/2.0/Invoices/xero-inv-8' => Http::response($invoice, 200),
+            'api.xero.com/api.xro/2.0/Contacts/*' => Http::response(['Contacts' => [['TaxNumber' => null]]], 200),
+        ]);
+
+        $this->postSignedWebhook($this->webhookBody('xero-inv-8', 'tenant-8'))->assertStatus(200);
+
+        $this->assertCount(1, Sale::first()->lineItems);
+        Event::assertDispatched(FiscalizationRequested::class);
     }
 
     #[Test]

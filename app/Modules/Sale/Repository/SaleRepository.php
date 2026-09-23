@@ -23,6 +23,7 @@ class SaleRepository extends AbstractRepository
     public function findPendingFiscalByOrganization(int $organizationId): array
     {
         return $this->model
+            ->with(['buyer', 'lineItems', 'payments'])
             ->where('organization_id', $organizationId)
             ->where('status', 'pending_fiscal')
             ->whereNull('fiscal_number')

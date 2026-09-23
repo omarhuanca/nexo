@@ -15,7 +15,13 @@ class ConnectorService
         private readonly IntegrationEventRepository $integrationEventRepository
     ) {}
 
-    public function createConnector(int $organizationId, string $name, array $allowedEvents = [], bool $active = true): Connector
+    public function createConnector(
+        int $organizationId,
+        string $name,
+        array $allowedEvents = [],
+        bool $active = true,
+        ?string $callbackUrl = null,
+    ): Connector
     {
         if ($this->connectorRepository->existsByNameInOrganization($name, $organizationId)) {
             throw new BusinessConflictException("A connector with the same name already exists in this organization.");
@@ -28,8 +34,12 @@ class ConnectorService
         $connector->setToken(hash('sha256', $plainToken));
         $connector->setActive($active);
         $connector->setAllowedEvents(empty($allowedEvents) ? null : $allowedEvents);
+        $connector->setCallbackUrl($callbackUrl);
+        if ($callbackUrl) $connector->generateCallbackSecret();
+        $plainCallbackSecret = $connector->plainCallbackSecret;
         $saved = $this->connectorRepository->saveReturn($connector);
         $saved->plainToken = $plainToken;
+        $saved->plainCallbackSecret = $plainCallbackSecret;
         return $saved;
     }
 
@@ -53,8 +63,21 @@ class ConnectorService
             throw new BusinessConflictException("A connector with the same name already exists in this organization.");
         }
 
+        $rotateSecret = (bool) ($data['rotate_callback_secret'] ?? false);
+        unset($data['rotate_callback_secret'], $data['callback_secret']);
+
         $connector->updateDetails($data);
-        return $this->connectorRepository->saveReturn($connector);
+
+        if (empty($connector->getCallbackUrl())) {
+            $connector->setCallbackSecret(null);
+        } elseif ($rotateSecret || empty($connector->getCallbackSecret())) {
+            $connector->generateCallbackSecret();
+        }
+
+        $plainCallbackSecret = $connector->plainCallbackSecret;
+        $saved = $this->connectorRepository->saveReturn($connector);
+        $saved->plainCallbackSecret = $plainCallbackSecret;
+        return $saved;
     }
 
     public function deleteConnector(int $id): void

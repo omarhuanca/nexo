@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
+use App\Shared\Security\PublicHttpsUrl;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateConnectorRequest extends FormRequest
@@ -22,6 +23,8 @@ class UpdateConnectorRequest extends FormRequest
             'allowed_events' => 'nullable|array',
             'allowed_events.*' => 'string|max:100',
             'active' => 'required|boolean',
+            'callback_url' => ['nullable', 'string', 'max:2048', 'url:https', new PublicHttpsUrl()],
+            'rotate_callback_secret' => 'sometimes|boolean',
         ];
     }
 }

@@ -5,11 +5,14 @@ namespace App\Modules\Integration\TaxCore\Service;
 use App\Events\FiscalizationRequested;
 use App\Modules\Sale\Domain\Sale;
 use App\Modules\Sale\Repository\SaleRepository;
+use App\Modules\Sale\Service\SaleCallbackService;
 use Illuminate\Support\Str;
 use Throwable;
 
 class TaxCoreSaleService
 {
+    public function __construct(private readonly SaleCallbackService $saleCallbackService) {}
+
     public function dispatchFiscalization(Sale $sale, SaleRepository $saleRepository): void
     {
         $vsdcPayload = $this->buildPayload($sale);
@@ -17,6 +20,8 @@ class TaxCoreSaleService
 
         $sale->setStatus('pending_fiscal');
         $saleRepository->save($sale);
+
+        $this->saleCallbackService->notify($sale, SaleCallbackService::EVENT_PENDING_FISCAL);
 
         try {
             broadcast(new FiscalizationRequested(

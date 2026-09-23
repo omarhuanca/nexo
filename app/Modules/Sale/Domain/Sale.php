@@ -66,6 +66,7 @@ class Sale extends BaseEntity
         'xero_result',
         'fiscal_number',
         'fiscal_result',
+        'xero_fiscal_synced_at',
         'error_message',
         'attempts',
         'processed_at',
@@ -76,6 +77,7 @@ class Sale extends BaseEntity
         'xero_result'  => 'array',
         'fiscal_result' => 'array',
         'processed_at' => 'datetime',
+        'xero_fiscal_synced_at' => 'datetime',
     ];
 
     public function organization()
